@@ -51,6 +51,7 @@ async function get(url, authorization = null): Promise<string> {
 }
 async function main() {
   const client = new openiap();
+  client.agent = "nodered";
   Util.client = client;
   if (process.env.NODE_ENV != "production") {
     config.DoDumpToConsole = true;

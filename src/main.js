@@ -97,6 +97,7 @@ function main() {
             switch (_c.label) {
                 case 0:
                     client = new nodeapi_1.openiap();
+                    client.agent = "nodered";
                     Util_1.Util.client = client;
                     if (process.env.NODE_ENV != "production") {
                         nodeapi_2.config.DoDumpToConsole = true;
