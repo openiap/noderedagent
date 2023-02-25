@@ -1,0 +1,6 @@
+/package
+node_modules
+/data
+/.vscode
+package-lock.json
+/make
