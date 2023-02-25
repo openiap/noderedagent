@@ -98,6 +98,7 @@ function main() {
                 case 0:
                     client = new nodeapi_1.openiap();
                     client.agent = "nodered";
+                    client.version = require("../package.json").version;
                     Util_1.Util.client = client;
                     if (process.env.NODE_ENV != "production") {
                         nodeapi_2.config.DoDumpToConsole = true;
