@@ -97,6 +97,9 @@ function main() {
             switch (_c.label) {
                 case 0:
                     client = new nodeapi_1.openiap();
+                    console.log("***************************");
+                    console.log("SET CLIENT INFORMATION!!!!!");
+                    console.log("***************************");
                     client.agent = "nodered";
                     client.version = require("../package.json").version;
                     Util_1.Util.client = client;

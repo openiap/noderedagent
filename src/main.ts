@@ -51,6 +51,9 @@ async function get(url, authorization = null): Promise<string> {
 }
 async function main() {
   const client = new openiap();
+  console.log("***************************");
+  console.log("SET CLIENT INFORMATION!!!!!");
+  console.log("***************************");
   client.agent = "nodered";
   client.version = require("../package.json").version;
   Util.client = client;
