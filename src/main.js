@@ -49,6 +49,7 @@ var express = require("express");
 var compression = require("compression");
 var nodered_settings_1 = require("./nodered_settings");
 var Util_1 = require("./nodes/Util");
+var middlewareauth_1 = require("./middlewareauth");
 var RED = nodered;
 var server = null;
 var app = null;
@@ -68,12 +69,11 @@ function get(url, authorization) {
                         port: uri.port,
                         hostname: uri.hostname,
                         path: uri.pathname,
-                        headers: { authorization: authorization }
+                        headers: {}
                     };
-                    // if(authorization != null && authorization != "") {
-                    //   options.headers
-                    // }
-                    // authorization
+                    if (authorization != null && authorization != "") {
+                        options.headers["authorization"] = authorization;
+                    }
                     provider.get(options, function (resp) {
                         var data = "";
                         resp.on("data", function (chunk) {
@@ -92,16 +92,17 @@ function get(url, authorization) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var client, settings, user, session, domain, protocol, externalport, well_known, _a, _b, adminrole, oidc_client_id, oidc_client_secret, options;
+        var client, api_role, credential_cache_seconds, settings, user, session, domain, protocol, externalport, well_known, _a, _b, admin_role, oidc_client_id, oidc_client_secret, options;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
                     client = new nodeapi_1.openiap();
-                    console.log("***************************");
-                    console.log("SET CLIENT INFORMATION!!!!!");
-                    console.log("***************************");
                     client.agent = "nodered";
                     client.version = require("../package.json").version;
+                    api_role = process.env.api_role;
+                    credential_cache_seconds = process.env.credential_cache_seconds;
+                    if (api_role == null || api_role == "")
+                        api_role = "";
                     Util_1.Util.client = client;
                     if (process.env.NODE_ENV != "production") {
                         nodeapi_2.config.DoDumpToConsole = true;
@@ -151,7 +152,7 @@ function main() {
                     well_known = _b.apply(_a, [_c.sent()]);
                     _c.label = 3;
                 case 3:
-                    adminrole = process.env.adminrole || "users";
+                    admin_role = process.env.admin_role || "users";
                     oidc_client_id = process.env.oidc_client_id || "agent";
                     oidc_client_secret = process.env.oidc_client_secret || "";
                     options = {
@@ -194,7 +195,7 @@ function main() {
                                                         user.permissions = "*";
                                                     if (role == settings.storageModule.nodered_id + " admins" || role.name == settings.storageModule.nodered_id + " admins")
                                                         user.permissions = "*";
-                                                    if (role == adminrole || role.name == adminrole)
+                                                    if (role == admin_role || role.name == admin_role)
                                                         user.permissions = "*";
                                                 }
                                             }
@@ -224,6 +225,15 @@ function main() {
                             return Promise.resolve();
                         }
                     };
+                    if (api_role != "") {
+                        middlewareauth_1.middlewareauth.api_role = api_role;
+                        // @ts-ignore
+                        if (credential_cache_seconds != "" && credential_cache_seconds != null)
+                            middlewareauth_1.middlewareauth.credential_cache_seconds = parseInt(credential_cache_seconds);
+                        settings.httpNodeMiddleware = function (req, res, next) {
+                            middlewareauth_1.middlewareauth.process(client, req, res, next);
+                        };
+                    }
                     settings.adminAuth.strategy.autoLogin = true;
                     return [4 /*yield*/, RED.init(server, settings)];
                 case 4:

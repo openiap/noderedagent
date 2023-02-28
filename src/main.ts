@@ -11,6 +11,7 @@ import * as express from "express";
 import * as compression from "compression";
 import { nodered_settings } from "./nodered_settings";
 import { Util } from "./nodes/Util";
+import { middlewareauth } from "./middlewareauth";
 let RED: nodered.Red = nodered;
 let server: http.Server = null;
 let app: express.Express = null;
@@ -29,12 +30,11 @@ async function get(url, authorization = null): Promise<string> {
       port: uri.port,
       hostname: uri.hostname,
       path: uri.pathname,
-      headers: {authorization}
+      headers: {}
     }
-    // if(authorization != null && authorization != "") {
-    //   options.headers
-    // }
-    // authorization
+    if(authorization != null && authorization != "") {
+      options.headers["authorization"] = authorization;
+    }
     provider.get(options, (resp) => {
       let data = "";
       resp.on("data", (chunk) => {
@@ -51,11 +51,12 @@ async function get(url, authorization = null): Promise<string> {
 }
 async function main() {
   const client = new openiap();
-  console.log("***************************");
-  console.log("SET CLIENT INFORMATION!!!!!");
-  console.log("***************************");
   client.agent = "nodered";
   client.version = require("../package.json").version;
+  var api_role = process.env.api_role;
+  var credential_cache_seconds:number = process.env.credential_cache_seconds as any;
+  if(api_role == null || api_role == "") api_role = "";
+
   Util.client = client;
   if (process.env.NODE_ENV != "production") {
     config.DoDumpToConsole = true;
@@ -107,7 +108,7 @@ async function main() {
   if(process.env.oidc_config != null && process.env.oidc_config != "") {
     well_known = JSON.parse(await get(process.env.oidc_config))
   }
-  const adminrole = process.env.adminrole || "users";
+  const admin_role = process.env.admin_role || "users";
   const oidc_client_id = process.env.oidc_client_id || "agent";
   const oidc_client_secret = process.env.oidc_client_secret || "";
   const options = {
@@ -136,7 +137,7 @@ async function main() {
             if (role == "nodered admins" || (role as any).name == "nodered admins") user.permissions = "*"
             if (role == settings.storageModule.nodered_id + "admins" || (role as any).name == settings.storageModule.nodered_id + "admins") user.permissions = "*"
             if (role == settings.storageModule.nodered_id + " admins" || (role as any).name == settings.storageModule.nodered_id + " admins") user.permissions = "*"
-            if (role == adminrole || (role as any).name == adminrole) user.permissions = "*"
+            if (role == admin_role || (role as any).name == admin_role) user.permissions = "*"
           }
         }
       }
@@ -160,8 +161,15 @@ async function main() {
       return Promise.resolve();
     }
   }
-
-
+  if(api_role != "") {
+    middlewareauth.api_role = api_role;
+    // @ts-ignore
+    if(credential_cache_seconds != "" && credential_cache_seconds != null) middlewareauth.credential_cache_seconds = parseInt(credential_cache_seconds);
+    
+    settings.httpNodeMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      middlewareauth.process(client, req, res, next);
+    };
+  }
   settings.adminAuth.strategy.autoLogin = true
   await RED.init(server, settings);
   app.use(settings.httpAdminRoot, RED.httpAdmin);
