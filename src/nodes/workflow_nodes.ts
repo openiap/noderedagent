@@ -167,6 +167,10 @@ export class workflow_in_node {
         try {
             this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
             let data: any = msg;
+            try {
+                if(typeof msg.data == "string") msg.data = JSON.parse(msg.data);
+            } catch (error) {
+            }
             data.payload = msg.data;
             delete data.data;
             try {
@@ -612,9 +616,8 @@ export class assign_workflow_node {
                     Util.HandleError(this, "Unknown workflow_instances id " + _id, msg);
                     return;
                 }
-                const currentinstance = res[0];
-                const state = res[0].state;
-                const _parentid = res[0]._parentid;
+                let _parentid = res[0]._parentid;
+                if(data != null && data.payload != null && data.payload._parentid != null) {   _parentid = data.payload._parentid }
                 if (_parentid !== null && _parentid !== undefined && _parentid !== "") {
                     const res2 = await this.client.Query<any>({ collectionname: "workflow_instances", query: { "_id": _parentid }, top: 1 });
                     if (res2.length == 0) {

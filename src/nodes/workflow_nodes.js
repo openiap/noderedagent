@@ -222,6 +222,12 @@ var workflow_in_node = /** @class */ (function () {
                         _a.trys.push([0, 7, , 8]);
                         this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
                         data = msg;
+                        try {
+                            if (typeof msg.data == "string")
+                                msg.data = JSON.parse(msg.data);
+                        }
+                        catch (error) {
+                        }
                         data.payload = msg.data;
                         delete data.data;
                         try {
@@ -733,7 +739,7 @@ var assign_workflow_node = /** @class */ (function () {
     };
     assign_workflow_node.prototype.OnMessage = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, data, priority, _id, res, currentinstance, state, _parentid, res2, parentinstance, res_1, error_11;
+            var result, data, priority, _id, res, _parentid, res2, parentinstance, res_1, error_11;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -772,9 +778,10 @@ var assign_workflow_node = /** @class */ (function () {
                             Util_1.Util.HandleError(this, "Unknown workflow_instances id " + _id, msg);
                             return [2 /*return*/];
                         }
-                        currentinstance = res[0];
-                        state = res[0].state;
                         _parentid = res[0]._parentid;
+                        if (data != null && data.payload != null && data.payload._parentid != null) {
+                            _parentid = data.payload._parentid;
+                        }
                         if (!(_parentid !== null && _parentid !== undefined && _parentid !== "")) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.client.Query({ collectionname: "workflow_instances", query: { "_id": _parentid }, top: 1 })];
                     case 2:
