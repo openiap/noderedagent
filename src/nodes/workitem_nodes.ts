@@ -217,7 +217,11 @@ export class updateworkitem {
             const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
             const _nextrun = await Util.EvaluateNodeProperty<string>(this, msg, "nextrun");
             var nextrun = undefined;
-            if(!Util.IsNullEmpty(_nextrun)) nextrun = new Date(_nextrun);
+            try {
+                if(!Util.IsNullEmpty(_nextrun)) nextrun = new Date(_nextrun);
+            } catch (error) {
+                nextrun = undefined
+            }
             
             var errorsource: string = "";
 

@@ -328,8 +328,13 @@ var updateworkitem = /** @class */ (function () {
                     case 9:
                         _nextrun = _a.sent();
                         nextrun = undefined;
-                        if (!Util_1.Util.IsNullEmpty(_nextrun))
-                            nextrun = new Date(_nextrun);
+                        try {
+                            if (!Util_1.Util.IsNullEmpty(_nextrun))
+                                nextrun = new Date(_nextrun);
+                        }
+                        catch (error) {
+                            nextrun = undefined;
+                        }
                         errorsource = "";
                         if (!Util_1.Util.IsNullEmpty(msg.error) && (Util_1.Util.IsNullUndefinded(workitem_1) || Util_1.Util.IsNullEmpty(workitem_1._id))) {
                             this.node.status({ fill: "blue", shape: "dot", text: "Ignore missing workitem" });
