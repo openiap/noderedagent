@@ -580,7 +580,8 @@ export class assign_workflow_node {
     async OnMessage(msg: any) {
         try {
             let result: any = {};
-            const data: any = msg.data;
+            let data: any = msg.data;
+            if(typeof data === "string") data = JSON.parse(data);
             if (data.state == "idle") return;
             if (!Util.IsNullUndefinded(data.__user)) {
                 data.user = data.__user;

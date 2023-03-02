@@ -734,6 +734,8 @@ var assign_workflow_node = /** @class */ (function () {
                         _a.trys.push([0, 7, , 8]);
                         result = {};
                         data = msg.data;
+                        if (typeof data === "string")
+                            data = JSON.parse(data);
                         if (data.state == "idle")
                             return [2 /*return*/];
                         if (!Util_1.Util.IsNullUndefinded(data.__user)) {
