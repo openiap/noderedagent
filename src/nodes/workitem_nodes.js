@@ -294,11 +294,11 @@ var updateworkitem = /** @class */ (function () {
     }
     updateworkitem.prototype.oninput = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var workitem_1, files, state, wipriority, _errormessage, ignoremaxretries, success_wiq, failed_wiq, _nextrun, nextrun, errorsource, result, error_3;
+            var workitem_1, files, state, wipriority, _errormessage, ignoremaxretries, success_wiq, failed_wiq, nextrun, _nextrun, error_3, errorsource, result, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 11, , 12]);
+                        _a.trys.push([0, 14, , 15]);
                         this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
                         return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "workitem")];
                     case 1:
@@ -324,17 +324,21 @@ var updateworkitem = /** @class */ (function () {
                         return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "failed_wiq")];
                     case 8:
                         failed_wiq = _a.sent();
-                        return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "nextrun")];
-                    case 9:
-                        _nextrun = _a.sent();
                         nextrun = undefined;
-                        try {
-                            if (!Util_1.Util.IsNullEmpty(_nextrun))
-                                nextrun = new Date(_nextrun);
-                        }
-                        catch (error) {
-                            nextrun = undefined;
-                        }
+                        _a.label = 9;
+                    case 9:
+                        _a.trys.push([9, 11, , 12]);
+                        return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "nextrun")];
+                    case 10:
+                        _nextrun = _a.sent();
+                        if (!Util_1.Util.IsNullEmpty(_nextrun))
+                            nextrun = new Date(_nextrun);
+                        return [3 /*break*/, 12];
+                    case 11:
+                        error_3 = _a.sent();
+                        nextrun = undefined;
+                        return [3 /*break*/, 12];
+                    case 12:
                         errorsource = "";
                         if (!Util_1.Util.IsNullEmpty(msg.error) && (Util_1.Util.IsNullUndefinded(workitem_1) || Util_1.Util.IsNullEmpty(workitem_1._id))) {
                             this.node.status({ fill: "blue", shape: "dot", text: "Ignore missing workitem" });
@@ -366,20 +370,35 @@ var updateworkitem = /** @class */ (function () {
                                 workitem_1.files.push(file);
                             });
                         }
+                        try {
+                            if (!Util_1.Util.IsNullEmpty(workitem_1.lastrun))
+                                workitem_1.lastrun = new Date(workitem_1.lastrun);
+                        }
+                        catch (error) {
+                            delete workitem_1.lastrun;
+                        }
+                        try {
+                            if (!Util_1.Util.IsNullEmpty(workitem_1.nextrun))
+                                workitem_1.nextrun = new Date(workitem_1.nextrun);
+                        }
+                        catch (error) {
+                            delete workitem_1.nextrun;
+                        }
                         return [4 /*yield*/, this.client.UpdateWorkitem({ workitem: workitem_1, ignoremaxretries: ignoremaxretries })];
-                    case 10:
+                    case 13:
                         result = _a.sent();
                         if (!Util_1.Util.IsNullEmpty(this.config.workitem)) {
                             Util_1.Util.SetMessageProperty(msg, this.config.workitem, result);
                         }
                         this.node.send(msg);
                         this.node.status({});
-                        return [3 /*break*/, 12];
-                    case 11:
-                        error_3 = _a.sent();
-                        Util_1.Util.HandleError(this, error_3, msg);
-                        return [3 /*break*/, 12];
-                    case 12: return [2 /*return*/];
+                        return [3 /*break*/, 15];
+                    case 14:
+                        error_4 = _a.sent();
+                        console.log(error_4);
+                        Util_1.Util.HandleError(this, error_4, msg);
+                        return [3 /*break*/, 15];
+                    case 15: return [2 /*return*/];
                 }
             });
         });
@@ -425,7 +444,7 @@ var popworkitem = /** @class */ (function () {
     }
     popworkitem.prototype.oninput = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, wiq, wiqid, download, result, files, i, file, error_4;
+            var _a, wiq, wiqid, download, result, files, i, file, error_5;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -469,8 +488,8 @@ var popworkitem = /** @class */ (function () {
                         }
                         return [3 /*break*/, 3];
                     case 2:
-                        error_4 = _b.sent();
-                        Util_1.Util.HandleError(this, error_4, msg);
+                        error_5 = _b.sent();
+                        Util_1.Util.HandleError(this, error_5, msg);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -518,7 +537,7 @@ var deleteworkitem = /** @class */ (function () {
     }
     deleteworkitem.prototype.oninput = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var workitem, error_5;
+            var workitem, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -537,8 +556,8 @@ var deleteworkitem = /** @class */ (function () {
                         this.node.send(msg);
                         return [3 /*break*/, 6];
                     case 5:
-                        error_5 = _a.sent();
-                        Util_1.Util.HandleError(this, error_5, msg);
+                        error_6 = _a.sent();
+                        Util_1.Util.HandleError(this, error_6, msg);
                         return [3 /*break*/, 6];
                     case 6: return [2 /*return*/];
                 }

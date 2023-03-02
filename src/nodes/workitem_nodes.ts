@@ -215,9 +215,9 @@ export class updateworkitem {
             const ignoremaxretries = await Util.EvaluateNodeProperty<boolean>(this, msg, "ignoremaxretries");
             const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
             const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
-            const _nextrun = await Util.EvaluateNodeProperty<string>(this, msg, "nextrun");
             var nextrun = undefined;
             try {
+                const _nextrun = await Util.EvaluateNodeProperty<string>(this, msg, "nextrun");
                 if(!Util.IsNullEmpty(_nextrun)) nextrun = new Date(_nextrun);
             } catch (error) {
                 nextrun = undefined
@@ -254,6 +254,16 @@ export class updateworkitem {
                     workitem.files.push(file);
                 });
             }
+            try {
+                if(!Util.IsNullEmpty(workitem.lastrun)) workitem.lastrun = new Date(workitem.lastrun);
+            } catch (error) {
+                delete workitem.lastrun
+            }
+            try {
+                if(!Util.IsNullEmpty(workitem.nextrun)) workitem.nextrun = new Date(workitem.nextrun);
+            } catch (error) {
+                delete workitem.nextrun
+            }
             const result = await this.client.UpdateWorkitem({ workitem, ignoremaxretries })
             if (!Util.IsNullEmpty(this.config.workitem)) {
                 Util.SetMessageProperty(msg, this.config.workitem, result);
@@ -261,6 +271,7 @@ export class updateworkitem {
             this.node.send(msg);
             this.node.status({});
         } catch (error) {
+            console.log(error)
             Util.HandleError(this, error, msg);
         }
     }

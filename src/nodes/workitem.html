@@ -342,6 +342,7 @@ RED.nodes.registerType('workitem updateworkitem', {
   color: "#a6bbcf",
   defaults: {
     name: { value: "" },
+    config: { value: "", type: "iworkitemqueue-config", required: true },
     workitem: { value: "payload", validate: validate("workitem") },
     workitemtype: { value: "" },
     ignoremaxretries: { value: "ignoremaxretries", validate: validate("ignoremaxretries") },
