@@ -216,6 +216,10 @@ export class workflow_in_node {
                     orgmsg.payload = data;
                     data = orgmsg;
                 } else {
+                    try {
+                        if (typeof orgmsg.payload === "string") orgmsg.payload = JSON.parse(orgmsg.payload);
+                    } catch (error) {                        
+                    }
                     if (typeof orgmsg.payload === "object") {
                         orgmsg.payload = Object.assign(orgmsg.payload, data.payload);
                     } else {
