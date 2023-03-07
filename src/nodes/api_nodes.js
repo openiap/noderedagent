@@ -117,17 +117,17 @@ var api_get_jwt = /** @class */ (function () {
                         this.node.status({ fill: "blue", shape: "dot", text: "Requesting token" });
                         reply = null;
                         if (!(!Util_1.Util.IsNullEmpty(username) && !Util_1.Util.IsNullEmpty(password))) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.client.Signin({ username: username, password: password, validateonly: true })];
+                        return [4 /*yield*/, this.client.Signin({ username: username, password: password, validateonly: true, longtoken: this.config.longtoken })];
                     case 2:
                         reply = _a.sent();
                         return [3 /*break*/, 7];
                     case 3:
                         if (!(this.config.refresh && !Util_1.Util.IsNullEmpty(msg.jwt))) return [3 /*break*/, 5];
-                        return [4 /*yield*/, this.client.Signin({ jwt: msg.jwt, validateonly: true })];
+                        return [4 /*yield*/, this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken })];
                     case 4:
                         reply = _a.sent();
                         return [3 /*break*/, 7];
-                    case 5: return [4 /*yield*/, this.client.Signin({ jwt: this.client.client.jwt, validateonly: true })];
+                    case 5: return [4 /*yield*/, this.client.Signin({ jwt: this.client.client.jwt, validateonly: true, longtoken: this.config.longtoken })];
                     case 6:
                         reply = _a.sent();
                         _a.label = 7;

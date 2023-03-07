@@ -83,11 +83,11 @@ export class api_get_jwt {
             this.node.status({ fill: "blue", shape: "dot", text: "Requesting token" });
             let reply = null;
             if (!Util.IsNullEmpty(username) && !Util.IsNullEmpty(password)) {
-                reply = await this.client.Signin({ username, password, validateonly: true})
+                reply = await this.client.Signin({ username, password, validateonly: true, longtoken: this.config.longtoken})
             } else if (this.config.refresh && !Util.IsNullEmpty(msg.jwt)) {
-                reply = await this.client.Signin({ jwt: msg.jwt, validateonly: true})
+                reply = await this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken})
             } else {
-                reply = await this.client.Signin({ jwt: this.client.client.jwt, validateonly: true})
+                reply = await this.client.Signin({ jwt: this.client.client.jwt, validateonly: true, longtoken: this.config.longtoken})
             }
             msg.jwt = reply.jwt;
             msg.user = reply.user;
