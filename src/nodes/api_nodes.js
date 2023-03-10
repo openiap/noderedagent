@@ -42,6 +42,7 @@ var info = nodeapi_1.config.info, warn = nodeapi_1.config.warn, err = nodeapi_1.
 var os = require("os");
 var RED = require("node-red");
 var fs = require("fs");
+var path = require("path");
 var Util_1 = require("./Util");
 var nodeapi_2 = require("@openiap/nodeapi");
 var pako = require('pako');
@@ -1583,7 +1584,7 @@ var upload_file = /** @class */ (function () {
     }
     upload_file.prototype.oninput = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var span, jwt, filename, mimeType, filecontent, priority, file, error_16;
+            var span, jwt, filename, mimeType, filecontent, priority, tempfilename, file, error_16;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1607,11 +1608,16 @@ var upload_file = /** @class */ (function () {
                             priority = msg.priority;
                         }
                         this.node.status({ fill: "blue", shape: "dot", text: "Saving file" });
-                        fs.writeFileSync(filename, filecontent);
-                        return [4 /*yield*/, this.client.UploadFile({ filename: filename, jwt: msg.jwt })];
+                        tempfilename = path.basename(filename);
+                        if (fs.existsSync(tempfilename)) {
+                            fs.unlinkSync(tempfilename);
+                        }
+                        fs.writeFileSync(tempfilename, filecontent);
+                        return [4 /*yield*/, this.client.UploadFile({ filename: tempfilename, jwt: msg.jwt })];
                     case 5:
                         file = _a.sent();
-                        Util_1.Util.SetMessageProperty(msg, this.config.entity, file.id);
+                        fs.unlinkSync(tempfilename);
+                        Util_1.Util.SetMessageProperty(msg, this.config.entity, file);
                         this.node.send(msg);
                         this.node.status({});
                         return [3 /*break*/, 8];

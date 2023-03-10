@@ -3,6 +3,7 @@ const { info, warn, err } = config;
 import * as os from "os";
 import * as RED from "node-red";
 import * as fs from "fs"
+import * as path from "path"
 import { Red } from "node-red";
 import { Util } from "./Util";
 import { Base, openiap } from "@openiap/nodeapi";
@@ -1408,9 +1409,15 @@ export class upload_file {
             if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
             this.node.status({ fill: "blue", shape: "dot", text: "Saving file" });
-            fs.writeFileSync(filename,  filecontent)
-            const file = await this.client.UploadFile({filename, jwt: msg.jwt});
-            Util.SetMessageProperty(msg, this.config.entity, file.id);
+
+            var tempfilename = path.basename(filename);
+            if(fs.existsSync(tempfilename)) {
+                fs.unlinkSync(tempfilename);
+            }
+            fs.writeFileSync(tempfilename,  filecontent)
+            const file = await this.client.UploadFile({filename:tempfilename, jwt: msg.jwt});
+            fs.unlinkSync (tempfilename);
+            Util.SetMessageProperty(msg, this.config.entity, file);
 
             this.node.send(msg);
             this.node.status({});

@@ -730,7 +730,7 @@ var openiap_storage = /** @class */ (function () {
                             credentialsarray.push(obj);
                         }
                         if (!credentials) return [3 /*break*/, 6];
-                        if (!(result != null || result.length === 0)) return [3 /*break*/, 3];
+                        if (!(result != null && result.length === 0)) return [3 /*break*/, 3];
                         item = {
                             name: "credentials for " + this.nodered_id,
                             credentials: credentials, credentialsarray: credentialsarray, _type: "credential", nodered_id: this.nodered_id,

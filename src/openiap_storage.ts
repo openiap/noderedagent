@@ -530,7 +530,7 @@ export class openiap_storage {
             credentialsarray.push(obj);
         }
         if (credentials) {
-            if (result != null || result.length === 0) {
+            if (result != null && result.length === 0) {
                 const item: any = {
                     name: "credentials for " + this.nodered_id,
                     credentials: credentials, credentialsarray: credentialsarray, _type: "credential", nodered_id: this.nodered_id,
