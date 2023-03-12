@@ -115,8 +115,8 @@ var rpa_detector_node = /** @class */ (function () {
                         _a = this;
                         return [4 /*yield*/, this.client.RegisterExchange({
                                 exchangename: this.config.queue, algorithm: "fanout"
-                            }, function (msg) {
-                                _this.OnMessage(msg);
+                            }, function (msg, payload, user, jwt) {
+                                _this.OnMessage(msg, payload, user, jwt);
                             })];
                     case 2:
                         _a.localqueue = _c.sent();
@@ -126,8 +126,8 @@ var rpa_detector_node = /** @class */ (function () {
                         _b = this;
                         return [4 /*yield*/, this.client.RegisterQueue({
                                 queuename: this.config.queue
-                            }, function (msg) {
-                                _this.OnMessage(msg);
+                            }, function (msg, payload, user, jwt) {
+                                _this.OnMessage(msg, payload, user, jwt);
                             })];
                     case 4:
                         _b.localqueue = _c.sent();
@@ -145,45 +145,19 @@ var rpa_detector_node = /** @class */ (function () {
             });
         });
     };
-    rpa_detector_node.prototype.OnMessage = function (msg) {
+    rpa_detector_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var _msgid;
+            var _msgid, result;
             return __generator(this, function (_a) {
                 try {
                     _msgid = Util_1.Util.GetUniqueIdentifier();
-                    if (typeof msg.data === "string")
-                        msg.data = JSON.parse(msg.data);
-                    // if (!Util.IsNullEmpty(msg.data?.traceId)) {
-                    //     WebServer.log_messages[_msgid] = new log_message(_msgid);
-                    //     WebServer.log_messages[_msgid].traceId = msg.data.traceId;
-                    //     WebServer.log_messages[_msgid].spanId = msg.data.spanId;
-                    // }
-                    if (msg.data && !msg.payload) {
-                        msg.payload = msg.data;
-                        delete msg.data;
-                    }
-                    if (msg.payload.data) {
-                        msg = msg.payload;
-                        msg.payload = msg.data;
-                        delete msg.data;
-                    }
-                    try {
-                        if (typeof msg.payload == "string") {
-                            msg.payload = JSON.parse(msg.payload);
-                        }
-                    }
-                    catch (error) {
-                    }
-                    if (!Util_1.Util.IsNullUndefinded(msg.__user)) {
-                        msg.user = msg.__user;
-                        delete msg.__user;
-                    }
-                    if (!Util_1.Util.IsNullUndefinded(msg.__jwt)) {
-                        msg.jwt = msg.__jwt;
-                        delete msg.__jwt;
-                    }
-                    msg._msgid = _msgid;
-                    this.node.send(msg);
+                    result = {
+                        _msgid: _msgid,
+                        payload: payload,
+                        jwt: jwt,
+                        user: user
+                    };
+                    this.node.send(result);
                 }
                 catch (error) {
                     Util_1.Util.HandleError(this, error, msg);
@@ -269,8 +243,8 @@ var rpa_workflow_node = /** @class */ (function () {
                         _a = this;
                         return [4 /*yield*/, this.client.RegisterQueue({
                                 queuename: this.config.queuename
-                            }, function (msg) {
-                                _this.OnMessage(msg);
+                            }, function (msg, payload, user, jwt) {
+                                _this.OnMessage(msg, payload, user, jwt);
                             })];
                     case 1:
                         // this.localqueue = this.uid;
@@ -288,58 +262,25 @@ var rpa_workflow_node = /** @class */ (function () {
             });
         });
     };
-    rpa_workflow_node.prototype.OnMessage = function (msg) {
+    rpa_workflow_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, correlationId, data, command;
+            var result, correlationId, command;
             return __generator(this, function (_a) {
                 try {
-                    result = {};
+                    result = { payload: payload, user: user, jwt: jwt };
                     correlationId = msg.correlationId;
-                    if (typeof msg.data === "string")
-                        msg.data = JSON.parse(msg.data);
-                    if (msg.data && !msg.payload) {
-                        msg.payload = msg.data;
-                        delete msg.data;
-                    }
-                    if (msg.payload.data) {
-                        if (msg.payload.command == "output")
-                            console.log("out " + msg.payload.data);
-                        msg = msg.payload;
-                        msg.payload = msg.data;
-                        delete msg.data;
-                    }
-                    data = msg;
-                    if (!Util_1.Util.IsNullUndefinded(data.__user)) {
-                        data.user = data.__user;
-                        delete data.__user;
-                    }
-                    if (!Util_1.Util.IsNullUndefinded(data.__jwt)) {
-                        data.jwt = data.__jwt;
-                        delete data.__jwt;
-                    }
-                    command = data.command;
-                    if (command == undefined && data.data != null && data.data.command != null) {
-                        command = data.data.command;
-                    }
+                    command = payload.command;
                     if (correlationId != null && rpa_workflow_node.messages[correlationId] != null) {
                         result = __assign({}, rpa_workflow_node.messages[correlationId]);
                         if (command == "invokecompleted" || command == "invokefailed" || command == "invokeaborted" || command == "error" || command == "timeout") {
                             delete rpa_workflow_node.messages[correlationId];
                         }
                     }
-                    else {
-                        result.jwt = data.jwt;
-                    }
                     if (!Util_1.Util.IsNullEmpty(command) && command.indexOf("invoke") > -1)
                         command = command.substring(6);
                     result.command = command;
                     // result._msgid = Util.GetUniqueIdentifier();
                     if (command == "completed") {
-                        result.payload = data.payload;
-                        if (data.user != null)
-                            result.user = data.user;
-                        if (data.jwt != null && Util_1.Util.IsNullUndefinded(result.jwt))
-                            result.jwt = data.jwt;
                         if (result.payload == null || result.payload == undefined) {
                             result.payload = {};
                         }
@@ -348,18 +289,13 @@ var rpa_workflow_node = /** @class */ (function () {
                         this.node.send([result, result]);
                     }
                     else if (command == "failed" || command == "aborted" || command == "error" || command == "timeout") {
-                        result.payload = data.payload;
-                        result.error = data.payload;
+                        result.error = payload;
                         if (command == "timeout") {
                             result.error = "request timed out, no robot picked up the message in a timely fashion";
                         }
                         if (result.error != null && result.error.Message != null && result.error.Message != "") {
                             result.error = result.error.Message;
                         }
-                        if (data.user != null)
-                            result.user = data.user;
-                        if (data.jwt != null && Util_1.Util.IsNullUndefinded(result.jwt))
-                            result.jwt = data.jwt;
                         if (result.payload == null || result.payload == undefined) {
                             result.payload = {};
                         }
@@ -370,17 +306,10 @@ var rpa_workflow_node = /** @class */ (function () {
                     else {
                         if (command != "output")
                             this.node.status({ fill: "blue", shape: "dot", text: command + "  " + this.localqueue });
-                        result.payload = data.payload;
-                        if (data.user != null)
-                            result.user = data.user;
-                        if (data.jwt != null && Util_1.Util.IsNullUndefinded(result.jwt))
-                            result.jwt = data.jwt;
                         if (result.payload == null || result.payload == undefined) {
                             result.payload = {};
                         }
                         result.id = correlationId;
-                        if (command != "success")
-                            console.log("snd " + result.payload);
                         this.node.send([null, result]);
                     }
                 }
@@ -557,8 +486,8 @@ var rpa_killworkflows_node = /** @class */ (function () {
                         _b.trys.push([0, 2, , 3]);
                         this.node.status({ fill: "blue", shape: "dot", text: "Connecting..." });
                         _a = this;
-                        return [4 /*yield*/, this.client.RegisterQueue({ queuename: "" }, function (msg) {
-                                _this.OnMessage(msg);
+                        return [4 /*yield*/, this.client.RegisterQueue({ queuename: "" }, function (msg, payload, user, jwt) {
+                                _this.OnMessage(msg, payload, user, jwt);
                             })];
                     case 1:
                         _a.localqueue = _b.sent();
@@ -575,53 +504,22 @@ var rpa_killworkflows_node = /** @class */ (function () {
             });
         });
     };
-    rpa_killworkflows_node.prototype.OnMessage = function (msg) {
+    rpa_killworkflows_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, correlationId, data, command;
+            var result, correlationId, command;
             return __generator(this, function (_a) {
                 try {
-                    result = {};
-                    if (typeof msg.data === "string")
-                        msg.data = JSON.parse(msg.data);
+                    result = { payload: payload, user: user, jwt: jwt };
                     correlationId = msg.correlationId;
-                    if (msg.data && !msg.payload) {
-                        msg.payload = msg.data;
-                        delete msg.data;
-                    }
-                    if (msg.payload.data) {
-                        msg = msg.payload;
-                        msg.payload = msg.data;
-                        delete msg.data;
-                    }
-                    data = msg;
-                    if (!Util_1.Util.IsNullUndefinded(data.__user)) {
-                        data.user = data.__user;
-                        delete data.__user;
-                    }
-                    if (!Util_1.Util.IsNullUndefinded(data.__jwt)) {
-                        data.jwt = data.__jwt;
-                        delete data.__jwt;
-                    }
-                    command = data.command;
-                    if (command == undefined && data.data != null && data.data.command != null) {
-                        command = data.data.command;
-                    }
+                    command = payload.command;
                     if (correlationId != null && rpa_killworkflows_node.messages[correlationId] != null) {
-                        // result = Object.assign({}, this.messages[correlationId]);
                         result = rpa_killworkflows_node.messages[correlationId];
                         if (command == "killallworkflowssuccess" || command == "error" || command == "timeout") {
                             delete rpa_killworkflows_node.messages[correlationId];
                         }
                     }
-                    else {
-                        result.jwt = data.jwt;
-                    }
                     if (command == "killallworkflowssuccess") {
                         // result.payload = data.payload;
-                        if (data.user != null)
-                            result.user = data.user;
-                        if (data.jwt != null && Util_1.Util.IsNullUndefinded(result.jwt))
-                            result.jwt = data.jwt;
                         if (result.payload == null || result.payload == undefined) {
                             result.payload = {};
                         }
@@ -630,18 +528,13 @@ var rpa_killworkflows_node = /** @class */ (function () {
                         this.node.send([result, null]);
                     }
                     else if (command == "error" || command == "timeout") {
-                        result.payload = data.payload;
-                        result.error = data.payload;
+                        result.error = payload;
                         if (command == "timeout") {
                             result.error = "request timed out, no robot picked up the message in a timely fashion";
                         }
                         if (result.error != null && result.error.Message != null && result.error.Message != "") {
                             result.error = result.error.Message;
                         }
-                        if (data.user != null)
-                            result.user = data.user;
-                        if (data.jwt != null && Util_1.Util.IsNullUndefinded(result.jwt))
-                            result.jwt = data.jwt;
                         if (result.payload == null || result.payload == undefined) {
                             result.payload = {};
                         }
@@ -651,11 +544,6 @@ var rpa_killworkflows_node = /** @class */ (function () {
                     }
                     else {
                         this.node.status({ fill: "blue", shape: "dot", text: "Unknown command " + command + "  " + this.localqueue });
-                        result.payload = data.payload;
-                        if (data.user != null)
-                            result.user = data.user;
-                        if (data.jwt != null && Util_1.Util.IsNullUndefinded(result.jwt))
-                            result.jwt = data.jwt;
                         if (result.payload == null || result.payload == undefined) {
                             result.payload = {};
                         }

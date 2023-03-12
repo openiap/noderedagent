@@ -1,4 +1,4 @@
-import { Base, openiap } from "@openiap/nodeapi";
+import { Base, openiap, QueueEvent } from "@openiap/nodeapi";
 import * as RED from "node-red";
 import { Red } from "node-red";
 import { Util } from "./Util";
@@ -60,9 +60,10 @@ export class workflow_in_node {
             this.node.status({ fill: "blue", shape: "dot", text: "Connecting..." });
             this.localqueue = await this.client.RegisterQueue({
                 queuename: this.config.queue
-            }, (msg: any) => {
-                return this.OnMessage(msg);
-                });
+            }, (msg: QueueEvent, payload: any, user: any, jwt:string) => {
+                this.OnMessage(msg, payload, user, jwt);
+            });
+
             await this.init();
             this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
         } catch (error) {
@@ -163,7 +164,7 @@ export class workflow_in_node {
         }
         return target;
     }
-    async OnMessage(msg: any) {
+    async OnMessage(msg: QueueEvent, payload: any, user: any, jwt:string) {
         try {
             this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
             let data: any = msg;
@@ -297,7 +298,7 @@ export class workflow_in_node {
                 const data: any = {};
                 data.error = error;
                 data.payload = msg.data;
-                data.jwt = msg.jwt;
+                data.jwt = jwt;
                 if (data.payload === null || data.payload === undefined) {
                     data.payload = {};
                 }

@@ -168,8 +168,8 @@ var amqp_consumer_node = /** @class */ (function () {
                         _a = this;
                         return [4 /*yield*/, this.client.RegisterQueue({
                                 queuename: this.config.queue
-                            }, function (msg) {
-                                _this.OnMessage(msg);
+                            }, function (msg, payload, user, jwt) {
+                                _this.OnMessage(msg, payload, user, jwt);
                             })];
                     case 1:
                         _a.localqueue = _b.sent();
@@ -186,34 +186,29 @@ var amqp_consumer_node = /** @class */ (function () {
             });
         });
     };
-    amqp_consumer_node.prototype.OnMessage = function (msg) {
+    amqp_consumer_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var data, span, data_1, error_3;
+            var span, error_3;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        data = (typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data);
                         span = null;
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 6, 7, 8]);
                         if (!this.config.autoack) return [3 /*break*/, 4];
-                        data_1 = Object.assign({}, msg.data);
-                        delete data_1.jwt;
-                        delete data_1.__jwt;
-                        delete data_1.__user;
                         if (!!Util_1.Util.IsNullEmpty(msg.replyto)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: msg.data, jwt: msg.jwt }, null)];
+                        return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: payload, jwt: jwt }, null)];
                     case 2:
                         _a.sent();
                         _a.label = 3;
                     case 3: return [3 /*break*/, 5];
                     case 4:
-                        data.amqpacknowledgment = function (data) { return __awaiter(_this, void 0, void 0, function () {
+                        payload.amqpacknowledgment = function (data) { return __awaiter(_this, void 0, void 0, function () {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: data, jwt: msg.jwt }, null)];
+                                    case 0: return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: data, jwt: jwt }, null)];
                                     case 1:
                                         _a.sent();
                                         return [2 /*return*/];
@@ -222,15 +217,7 @@ var amqp_consumer_node = /** @class */ (function () {
                         }); };
                         _a.label = 5;
                     case 5:
-                        if (data.__user != null) {
-                            data.user = data.__user;
-                            delete data.__user;
-                        }
-                        if (data.__jwt != null && data.__jwt != "") {
-                            data.jwt = data.__jwt;
-                            delete data.__jwt;
-                        }
-                        this.node.send(data);
+                        this.node.send(payload);
                         return [3 /*break*/, 8];
                     case 6:
                         error_3 = _a.sent();
@@ -325,8 +312,8 @@ var amqp_publisher_node = /** @class */ (function () {
                         _a = this;
                         return [4 /*yield*/, this.client.RegisterQueue({
                                 queuename: this.localqueue
-                            }, function (msg) {
-                                _this.OnMessage(msg);
+                            }, function (msg, payload, user, jwt) {
+                                _this.OnMessage(msg, payload, user, jwt);
                             })];
                     case 1:
                         _a.localqueue = _b.sent();
@@ -345,23 +332,25 @@ var amqp_publisher_node = /** @class */ (function () {
             });
         });
     };
-    amqp_publisher_node.prototype.OnMessage = function (msg) {
+    amqp_publisher_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var data, span, result;
+            var span, result;
             return __generator(this, function (_a) {
-                data = (typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data);
                 span = null;
                 try {
                     result = {};
-                    if (data._msgid != null && data._msgid != "") {
-                        if (amqp_publisher_node.payloads && amqp_publisher_node.payloads[data._msgid]) {
-                            result = Object.assign(amqp_publisher_node.payloads[data._msgid], data);
-                            delete amqp_publisher_node.payloads[data._msgid];
+                    if (payload._msgid != null && payload._msgid != "") {
+                        if (amqp_publisher_node.payloads && amqp_publisher_node.payloads[payload._msgid]) {
+                            result = Object.assign(amqp_publisher_node.payloads[payload._msgid], payload);
+                            delete amqp_publisher_node.payloads[payload._msgid];
                         }
                     }
-                    result.payload = data.payload;
-                    result.jwt = data.jwt;
-                    if (data.command == "timeout") {
+                    result.payload = payload;
+                    if (!Util_1.Util.IsNullEmpty(jwt))
+                        result.jwt = jwt;
+                    if (!Util_1.Util.IsNullUndefinded(user))
+                        result.user = user;
+                    if (payload.command == "timeout") {
                         result.error = "Message timed out, message was not picked up in a timely fashion";
                         this.node.send([null, result]);
                     }
@@ -586,8 +575,8 @@ var amqp_exchange_node = /** @class */ (function () {
                         return [4 /*yield*/, this.client.RegisterExchange({
                                 exchangename: this.config.exchange, algorithm: this.config.algorithm,
                                 routingkey: this.config.routingkey
-                            }, function (msg) {
-                                _this.OnMessage(msg);
+                            }, function (msg, payload, user, jwt) {
+                                _this.OnMessage(msg, payload, user, jwt);
                             })];
                     case 1:
                         _a.localqueue = _b.sent();
@@ -604,27 +593,17 @@ var amqp_exchange_node = /** @class */ (function () {
             });
         });
     };
-    amqp_exchange_node.prototype.OnMessage = function (msg) {
+    amqp_exchange_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var data, data_2;
             return __generator(this, function (_a) {
                 try {
-                    data = (typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data);
                     if (this.config.autoack) {
-                        data_2 = Object.assign({}, msg.data);
-                        delete data_2.jwt;
-                        delete data_2.__jwt;
-                        delete data_2.__user;
                     }
-                    if (!Util_1.Util.IsNullUndefinded(data.__user)) {
-                        data.user = data.__user;
-                        delete data.__user;
-                    }
-                    if (!Util_1.Util.IsNullUndefinded(data.__jwt)) {
-                        data.jwt = data.__jwt;
-                        delete data.__jwt;
-                    }
-                    this.node.send(data);
+                    if (!Util_1.Util.IsNullEmpty(jwt))
+                        payload.jwt = jwt;
+                    if (!Util_1.Util.IsNullUndefinded(user))
+                        payload.user = user;
+                    this.node.send(payload);
                 }
                 catch (error) {
                     Util_1.Util.HandleError(this, error, msg);

@@ -1,4 +1,4 @@
-import { openiap } from "@openiap/nodeapi";
+import { openiap, QueueEvent } from "@openiap/nodeapi";
 import { config } from "@openiap/nodeapi";
 const { info, warn, err } = config;
 import * as RED from "node-red";
@@ -117,8 +117,8 @@ export class amqp_consumer_node {
             info("consumer node in::connect");
             this.localqueue = await this.client.RegisterQueue({
                 queuename: this.config.queue
-            }, (msg: any) => {
-                this.OnMessage(msg);
+            }, (msg: QueueEvent, payload: any, user: any, jwt:string) => {
+                this.OnMessage(msg, payload, user, jwt);
             });
             info("registed amqp consumer as " + this.localqueue);
             this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
@@ -127,33 +127,20 @@ export class amqp_consumer_node {
             setTimeout(this.connect.bind(this), (Math.floor(Math.random() * 6) + 1) * 2000);
         }
     }
-    async OnMessage(msg: any) {
-        const data: any = (typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data);
+    async OnMessage(msg: QueueEvent, payload: any, user: any, jwt:string) {
         // var span = Logger.otel.startSpan("Consumer Node Received", data.traceId, data.spanId);
         var span = null;
         try {
             if (this.config.autoack) {
-                const data: any = Object.assign({}, msg.data);
-                delete data.jwt;
-                delete data.__jwt;
-                delete data.__user;
                 if(!Util.IsNullEmpty(msg.replyto)) {
-                    await this.client.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data: msg.data, jwt: msg.jwt}, null)
+                    await this.client.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data: payload, jwt: jwt}, null)
                 }
             } else {
-                data.amqpacknowledgment = async (data)=> {
-                    await this.client.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data, jwt: msg.jwt}, null)
+                payload.amqpacknowledgment = async (data)=> {
+                    await this.client.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data, jwt: jwt}, null)
                 }
             }
-            if (data.__user != null) {
-                data.user = data.__user;
-                delete data.__user;
-            }
-            if (data.__jwt != null  && data.__jwt != "") {
-                data.jwt = data.__jwt;
-                delete data.__jwt;
-            }
-            this.node.send(data);
+            this.node.send(payload);
         } catch (error) {
             Util.HandleError(this, error, null);
         } finally {
@@ -234,8 +221,8 @@ export class amqp_publisher_node {
             this.localqueue = this.config.localqueue;
             this.localqueue = await this.client.RegisterQueue({
                 queuename: this.localqueue
-            }, (msg)=> {
-                this.OnMessage(msg);
+            }, (msg: QueueEvent, payload: any, user: any, jwt:string) => {
+                this.OnMessage(msg, payload, user, jwt);
             });
             if (this.localqueue != null && this.localqueue != "") {
                 info("registed amqp published return queue as " + this.localqueue);
@@ -246,21 +233,21 @@ export class amqp_publisher_node {
             Util.HandleError(this, error, null);
         }
     }
-    async OnMessage(msg: any) {
-        const data: any = (typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data);
+    async OnMessage(msg: QueueEvent, payload: any, user: any, jwt:string) {
         // var span = Logger.otel.startSpan("Publish Node Receive", data.traceId, data.spanId);
         var span = null;
         try {
             let result: any = {};
-            if (data._msgid != null && data._msgid != "") {
-                if (amqp_publisher_node.payloads && amqp_publisher_node.payloads[data._msgid]) {
-                    result = Object.assign(amqp_publisher_node.payloads[data._msgid], data);
-                    delete amqp_publisher_node.payloads[data._msgid];
+            if (payload._msgid != null && payload._msgid != "") {
+                if (amqp_publisher_node.payloads && amqp_publisher_node.payloads[payload._msgid]) {
+                    result = Object.assign(amqp_publisher_node.payloads[payload._msgid], payload);
+                    delete amqp_publisher_node.payloads[payload._msgid];
                 }
             }
-            result.payload = data.payload;
-            result.jwt = data.jwt;
-            if (data.command == "timeout") {
+            result.payload = payload;
+            if(!Util.IsNullEmpty(jwt)) result.jwt = jwt;
+            if(!Util.IsNullUndefinded(user)) result.user = user;
+            if (payload.command == "timeout") {
                 result.error = "Message timed out, message was not picked up in a timely fashion";
                 this.node.send([null, result]);
             } else {
@@ -442,8 +429,8 @@ export class amqp_exchange_node {
             this.localqueue = await this.client.RegisterExchange({
                 exchangename: this.config.exchange, algorithm: this.config.algorithm,
                 routingkey: this.config.routingkey
-            }, (msg: any) => {
-                this.OnMessage(msg);
+            }, (msg: QueueEvent, payload: any, user: any, jwt:string) => {
+                this.OnMessage(msg, payload, user, jwt);
             });
             info("registed amqp exchange as " + this.config.exchange);
             this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.config.exchange });
@@ -452,24 +439,13 @@ export class amqp_exchange_node {
             setTimeout(this.connect.bind(this), (Math.floor(Math.random() * 6) + 1) * 2000);
         }
     }
-    async OnMessage(msg: any) {
+    async OnMessage(msg: QueueEvent, payload: any, user: any, jwt:string) {
         try {
-            const data: any = (typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data);
             if (this.config.autoack) {
-                const data: any = Object.assign({}, msg.data);
-                delete data.jwt;
-                delete data.__jwt;
-                delete data.__user;
-            }            
-            if (!Util.IsNullUndefinded(data.__user)) {
-                data.user = data.__user;
-                delete data.__user;
             }
-            if (!Util.IsNullUndefinded(data.__jwt)) {
-                data.jwt = data.__jwt;
-                delete data.__jwt;
-            }
-            this.node.send(data);
+            if(!Util.IsNullEmpty(jwt)) payload.jwt = jwt;
+            if(!Util.IsNullUndefinded(user)) payload.user = user;
+            this.node.send(payload);
         } catch (error) {
             Util.HandleError(this, error, msg);
         }
