@@ -238,15 +238,15 @@ export class workflow_in_node {
                 data.jwt = jwt;
             } else {
                 this.node.status({ fill: "blue", shape: "dot", text: "Processing new instance " });
-                const jwt = data.jwt;
+                const _jwt = data.jwt || jwt;
 
                 let who = this.client.client.user;
                 const me = this.client.client.user;
                 const testjwt = this.client.client.jwt;
 
                 this.node.status({ fill: "blue", shape: "dot", text: "Renew token " });
-                if (!Util.IsNullEmpty(jwt)) {
-                    const signin = await this.client.Signin({ jwt: jwt, validateonly: true }); // longtoken: true
+                if (!Util.IsNullEmpty(_jwt)) {
+                    const signin = await this.client.Signin({ jwt: _jwt, validateonly: true }); // longtoken: true
                     who = signin.user;
                     data.jwt = signin.jwt;
                     console.debug(testjwt);
@@ -254,11 +254,12 @@ export class workflow_in_node {
                 delete data.jwt;                
                 const item: Base = ({ _type: "instance", "queue": this.localqueue, "name": this.workflow.name, payload: data, workflow: this.workflow._id, targetid: who._id }) as any;
                 (item as any)._replyTo = msg.replyto;
-                (item as any)._correlationId = msg.correlationId;
+                (item as any).correlationId = msg.correlationId;
                 Base.addRight(item, who._id, who.name, [-1]);
                 if (who._id != me._id) Base.addRight(item, me._id, me.name, [-1]);
                 this.node.status({ fill: "blue", shape: "dot", text: "Create instance " });
-                const res2 = await this.client.InsertOne<Base>({ collectionname: "workflow_instances", item, jwt });
+                
+                const res2 = await this.client.InsertOne<Base>({ collectionname: "workflow_instances", item });
 
                 // Logger.instanse.info("workflow in activated creating a new workflow instance with id " + res2._id);
                 // OpenFlow Controller.ts needs the id, when creating a new intance !
@@ -272,10 +273,9 @@ export class workflow_in_node {
                 }
                 // result = this.nestedassign(res2, result);
                 data = Object.assign(res2, data);
-                data.jwt = jwt;
             }
             data._replyTo = msg.replyto;
-            data._correlationId = msg.correlationId;
+            data.correlationId = msg.correlationId;
 
             if (data != null && data.jwt != null && data.payload != null && data.jwt == data.payload.jwt) {
                 delete data.payload.jwt;

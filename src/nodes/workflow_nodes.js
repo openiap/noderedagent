@@ -215,7 +215,7 @@ var workflow_in_node = /** @class */ (function () {
     };
     workflow_in_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var data, _id, jwt_1, res, orgmsg, jwt_2, who, me, testjwt, signin, item, res2, error_2, data;
+            var data, _id, jwt_1, res, orgmsg, _jwt, who, me, testjwt, signin, item, res2, error_2, data;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -297,13 +297,13 @@ var workflow_in_node = /** @class */ (function () {
                         return [3 /*break*/, 6];
                     case 2:
                         this.node.status({ fill: "blue", shape: "dot", text: "Processing new instance " });
-                        jwt_2 = data.jwt;
+                        _jwt = data.jwt || jwt;
                         who = this.client.client.user;
                         me = this.client.client.user;
                         testjwt = this.client.client.jwt;
                         this.node.status({ fill: "blue", shape: "dot", text: "Renew token " });
-                        if (!!Util_1.Util.IsNullEmpty(jwt_2)) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.client.Signin({ jwt: jwt_2, validateonly: true })];
+                        if (!!Util_1.Util.IsNullEmpty(_jwt)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.client.Signin({ jwt: _jwt, validateonly: true })];
                     case 3:
                         signin = _a.sent();
                         who = signin.user;
@@ -314,12 +314,12 @@ var workflow_in_node = /** @class */ (function () {
                         delete data.jwt;
                         item = ({ _type: "instance", "queue": this.localqueue, "name": this.workflow.name, payload: data, workflow: this.workflow._id, targetid: who._id });
                         item._replyTo = msg.replyto;
-                        item._correlationId = msg.correlationId;
+                        item.correlationId = msg.correlationId;
                         nodeapi_1.Base.addRight(item, who._id, who.name, [-1]);
                         if (who._id != me._id)
                             nodeapi_1.Base.addRight(item, me._id, me.name, [-1]);
                         this.node.status({ fill: "blue", shape: "dot", text: "Create instance " });
-                        return [4 /*yield*/, this.client.InsertOne({ collectionname: "workflow_instances", item: item, jwt: jwt_2 })];
+                        return [4 /*yield*/, this.client.InsertOne({ collectionname: "workflow_instances", item: item })];
                     case 5:
                         res2 = _a.sent();
                         // Logger.instanse.info("workflow in activated creating a new workflow instance with id " + res2._id);
@@ -335,11 +335,10 @@ var workflow_in_node = /** @class */ (function () {
                         }
                         // result = this.nestedassign(res2, result);
                         data = Object.assign(res2, data);
-                        data.jwt = jwt_2;
                         _a.label = 6;
                     case 6:
                         data._replyTo = msg.replyto;
-                        data._correlationId = msg.correlationId;
+                        data.correlationId = msg.correlationId;
                         if (data != null && data.jwt != null && data.payload != null && data.jwt == data.payload.jwt) {
                             delete data.payload.jwt;
                         }

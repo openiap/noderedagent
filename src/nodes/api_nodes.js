@@ -128,7 +128,7 @@ var api_get_jwt = /** @class */ (function () {
                     case 4:
                         reply = _a.sent();
                         return [3 /*break*/, 7];
-                    case 5: return [4 /*yield*/, this.client.Signin({ jwt: this.client.client.jwt, validateonly: true, longtoken: this.config.longtoken })];
+                    case 5: return [4 /*yield*/, this.client.Signin({ validateonly: true, longtoken: this.config.longtoken })];
                     case 6:
                         reply = _a.sent();
                         _a.label = 7;

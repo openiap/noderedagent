@@ -88,7 +88,7 @@ export class api_get_jwt {
             } else if (this.config.refresh && !Util.IsNullEmpty(msg.jwt)) {
                 reply = await this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken})
             } else {
-                reply = await this.client.Signin({ jwt: this.client.client.jwt, validateonly: true, longtoken: this.config.longtoken})
+                reply = await this.client.Signin({ validateonly: true, longtoken: this.config.longtoken})
             }
             msg.jwt = reply.jwt;
             msg.user = reply.user;
