@@ -92,9 +92,9 @@ function get(url, authorization) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var client, api_role, credential_cache_seconds, settings, user, session, domain, protocol, externalport, well_known, _a, _b, admin_role, oidc_client_id, oidc_client_secret, options;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var client, api_role, credential_cache_seconds, settings, user, session, domain, protocol, externalport, well_known, json, admin_role, oidc_client_id, oidc_client_secret, options;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
                     client = new nodeapi_1.openiap();
                     client.agent = "nodered";
@@ -115,7 +115,7 @@ function main() {
                     settings.storageModule = new openiap_storage_1.openiap_storage(client);
                     return [4 /*yield*/, client.connect()];
                 case 1:
-                    user = _c.sent();
+                    user = _a.sent();
                     if (user == null)
                         throw new Error("Missing api url with credentals or jwt token");
                     console.log("Signed in as: " + user.username);
@@ -146,11 +146,17 @@ function main() {
                         token_endpoint: process.env.oidc_token_endpoint
                     };
                     if (!(process.env.oidc_config != null && process.env.oidc_config != "")) return [3 /*break*/, 3];
-                    _b = (_a = JSON).parse;
                     return [4 /*yield*/, get(process.env.oidc_config)];
                 case 2:
-                    well_known = _b.apply(_a, [_c.sent()]);
-                    _c.label = 3;
+                    json = _a.sent();
+                    try {
+                        well_known = JSON.parse(json);
+                    }
+                    catch (error) {
+                        console.log(json);
+                        throw error;
+                    }
+                    _a.label = 3;
                 case 3:
                     admin_role = process.env.admin_role || "users";
                     oidc_client_id = process.env.oidc_client_id || "agent";
@@ -237,7 +243,7 @@ function main() {
                     settings.adminAuth.strategy.autoLogin = true;
                     return [4 /*yield*/, RED.init(server, settings)];
                 case 4:
-                    _c.sent();
+                    _a.sent();
                     app.use(settings.httpAdminRoot, RED.httpAdmin);
                     app.use(settings.httpNodeRoot, RED.httpNode);
                     server.listen(settings.uiPort).on('error', function (error) {

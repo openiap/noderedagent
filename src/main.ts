@@ -106,7 +106,13 @@ async function main() {
     token_endpoint: process.env.oidc_token_endpoint,
   }
   if(process.env.oidc_config != null && process.env.oidc_config != "") {
-    well_known = JSON.parse(await get(process.env.oidc_config))
+    var json = await get(process.env.oidc_config);
+    try {
+      well_known = JSON.parse(json)  
+    } catch (error) {
+      console.log(json)
+      throw error;
+    }    
   }
   const admin_role = process.env.admin_role || "users";
   const oidc_client_id = process.env.oidc_client_id || "agent";
