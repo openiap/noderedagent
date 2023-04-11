@@ -192,7 +192,9 @@ export class rpa_workflow_node {
             result.command = command;
             // result._msgid = Util.GetUniqueIdentifier();
             if (command == "completed") {
-                if (result.payload == null || result.payload == undefined) { result.payload = {}; }
+                if (result.payload == null) { result.payload = {}; }
+                if (payload.data == null) { payload.data = {}; }
+                result.payload = Object.assign(result.payload, payload.data);
                 this.node.status({ fill: "green", shape: "dot", text: command + "  " + this.localqueue });
                 result.id = correlationId;
                 this.node.send([result, result]);
@@ -281,7 +283,7 @@ export class rpa_workflow_node {
                 data: { payload: msg.payload }
             }
             const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-            this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: false, jwt: msg.jwt }, null);
+            await this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: false, jwt: msg.jwt }, null);
             this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
         } catch (error) {
             // Util.HandleError(this, error);
@@ -446,7 +448,7 @@ export class rpa_killworkflows_node {
                 data: {}
             }
             const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-            this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: true, jwt: msg.jwt }, null);
+            await this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: true, jwt: msg.jwt }, null);
             this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
         } catch (error) {
             try {

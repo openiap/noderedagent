@@ -281,9 +281,13 @@ var rpa_workflow_node = /** @class */ (function () {
                     result.command = command;
                     // result._msgid = Util.GetUniqueIdentifier();
                     if (command == "completed") {
-                        if (result.payload == null || result.payload == undefined) {
+                        if (result.payload == null) {
                             result.payload = {};
                         }
+                        if (payload.data == null) {
+                            payload.data = {};
+                        }
+                        result.payload = Object.assign(result.payload, payload.data);
                         this.node.status({ fill: "green", shape: "dot", text: command + "  " + this.localqueue });
                         result.id = correlationId;
                         this.node.send([result, result]);
@@ -323,91 +327,96 @@ var rpa_workflow_node = /** @class */ (function () {
     };
     rpa_workflow_node.prototype.oninput = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var span, queue, workflowid, killexisting, killallexisting, priority, correlationId, rpacommand, expiration;
+            var span, queue, workflowid, killexisting, killallexisting, priority, correlationId, rpacommand, expiration, error_3;
             return __generator(this, function (_a) {
-                span = null;
-                try {
-                    this.node.status({});
-                    if (this.client == null || !this.client.signedin) {
-                        throw new Error("Not connected to openflow");
-                    }
-                    if (Util_1.Util.IsNullEmpty(this.localqueue)) {
-                        throw new Error("Queue not registered yet");
-                    }
-                    queue = this.config.queue;
-                    workflowid = this.config.workflow;
-                    killexisting = this.config.killexisting;
-                    killallexisting = this.config.killallexisting;
-                    priority = 1;
-                    if (!Util_1.Util.IsNullEmpty(msg.priority)) {
-                        priority = msg.priority;
-                    }
-                    if (queue == "none")
-                        queue = "";
-                    if (queue == "from msg.targetid")
-                        queue = "";
-                    if (workflowid == "none")
-                        workflowid = "";
-                    if (workflowid == "from msg.workflowid")
-                        workflowid = "";
-                    if (Util_1.Util.IsNullEmpty(queue) && !Util_1.Util.IsNullEmpty(msg.targetid)) {
-                        queue = msg.targetid;
-                    }
-                    if (Util_1.Util.IsNullEmpty(workflowid) && !Util_1.Util.IsNullEmpty(msg.workflowid)) {
-                        workflowid = msg.workflowid;
-                    }
-                    if (!Util_1.Util.IsNullEmpty(msg.killexisting)) {
-                        killexisting = msg.killexisting;
-                    }
-                    if (!Util_1.Util.IsNullEmpty(msg.killallexisting)) {
-                        killallexisting = msg.killallexisting;
-                    }
-                    correlationId = msg._msgid || Util_1.Util.GetUniqueIdentifier();
-                    rpa_workflow_node.messages[correlationId] = msg;
-                    if (msg.payload == null || typeof msg.payload == "string" || typeof msg.payload == "number") {
-                        msg.payload = { "data": msg.payload };
-                    }
-                    if (Util_1.Util.IsNullEmpty(queue)) {
-                        this.node.status({ fill: "red", shape: "dot", text: "robot is mandatory" });
-                        return [2 /*return*/];
-                    }
-                    if (Util_1.Util.IsNullEmpty(workflowid)) {
-                        this.node.status({ fill: "red", shape: "dot", text: "workflow is mandatory" });
-                        return [2 /*return*/];
-                    }
-                    rpacommand = {
-                        command: "invoke",
-                        workflowid: workflowid,
-                        killexisting: killexisting,
-                        killallexisting: killallexisting,
-                        jwt: msg.jwt,
-                        _msgid: msg._msgid,
-                        // Adding expiry to the rpacommand as a timestamp for when the RPA message is expected to timeout from the message queue
-                        // Currently set to 20 seconds into the future
-                        expiry: Math.floor((new Date().getTime()) / 1000) + 500,
-                        data: { payload: msg.payload }
-                    };
-                    expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-                    this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId: correlationId, striptoken: false, jwt: msg.jwt }, null);
-                    this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
+                switch (_a.label) {
+                    case 0:
+                        span = null;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, 4, 5]);
+                        this.node.status({});
+                        if (this.client == null || !this.client.signedin) {
+                            throw new Error("Not connected to openflow");
+                        }
+                        if (Util_1.Util.IsNullEmpty(this.localqueue)) {
+                            throw new Error("Queue not registered yet");
+                        }
+                        queue = this.config.queue;
+                        workflowid = this.config.workflow;
+                        killexisting = this.config.killexisting;
+                        killallexisting = this.config.killallexisting;
+                        priority = 1;
+                        if (!Util_1.Util.IsNullEmpty(msg.priority)) {
+                            priority = msg.priority;
+                        }
+                        if (queue == "none")
+                            queue = "";
+                        if (queue == "from msg.targetid")
+                            queue = "";
+                        if (workflowid == "none")
+                            workflowid = "";
+                        if (workflowid == "from msg.workflowid")
+                            workflowid = "";
+                        if (Util_1.Util.IsNullEmpty(queue) && !Util_1.Util.IsNullEmpty(msg.targetid)) {
+                            queue = msg.targetid;
+                        }
+                        if (Util_1.Util.IsNullEmpty(workflowid) && !Util_1.Util.IsNullEmpty(msg.workflowid)) {
+                            workflowid = msg.workflowid;
+                        }
+                        if (!Util_1.Util.IsNullEmpty(msg.killexisting)) {
+                            killexisting = msg.killexisting;
+                        }
+                        if (!Util_1.Util.IsNullEmpty(msg.killallexisting)) {
+                            killallexisting = msg.killallexisting;
+                        }
+                        correlationId = msg._msgid || Util_1.Util.GetUniqueIdentifier();
+                        rpa_workflow_node.messages[correlationId] = msg;
+                        if (msg.payload == null || typeof msg.payload == "string" || typeof msg.payload == "number") {
+                            msg.payload = { "data": msg.payload };
+                        }
+                        if (Util_1.Util.IsNullEmpty(queue)) {
+                            this.node.status({ fill: "red", shape: "dot", text: "robot is mandatory" });
+                            return [2 /*return*/];
+                        }
+                        if (Util_1.Util.IsNullEmpty(workflowid)) {
+                            this.node.status({ fill: "red", shape: "dot", text: "workflow is mandatory" });
+                            return [2 /*return*/];
+                        }
+                        rpacommand = {
+                            command: "invoke",
+                            workflowid: workflowid,
+                            killexisting: killexisting,
+                            killallexisting: killallexisting,
+                            jwt: msg.jwt,
+                            _msgid: msg._msgid,
+                            // Adding expiry to the rpacommand as a timestamp for when the RPA message is expected to timeout from the message queue
+                            // Currently set to 20 seconds into the future
+                            expiry: Math.floor((new Date().getTime()) / 1000) + 500,
+                            data: { payload: msg.payload }
+                        };
+                        expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
+                        return [4 /*yield*/, this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId: correlationId, striptoken: false, jwt: msg.jwt }, null)];
+                    case 2:
+                        _a.sent();
+                        this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
+                        return [3 /*break*/, 5];
+                    case 3:
+                        error_3 = _a.sent();
+                        // Util.HandleError(this, error);
+                        try {
+                            this.node.status({ fill: "red", shape: "dot", text: error_3 });
+                            msg.error = error_3;
+                            this.node.send([null, null, msg]);
+                        }
+                        catch (error) {
+                        }
+                        return [3 /*break*/, 5];
+                    case 4:
+                        span === null || span === void 0 ? void 0 : span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
                 }
-                catch (error) {
-                    // Util.HandleError(this, error);
-                    try {
-                        this.node.status({ fill: "red", shape: "dot", text: error });
-                        msg.error = error;
-                        this.node.send([null, null, msg]);
-                    }
-                    catch (error) {
-                    }
-                }
-                finally {
-                    span === null || span === void 0 ? void 0 : span.end();
-                    // if (logmsg != null) {
-                    //     log_message.nodeend(msg._msgid, this.node.id);
-                    // }
-                }
-                return [2 /*return*/];
             });
         });
     };
@@ -478,7 +487,7 @@ var rpa_killworkflows_node = /** @class */ (function () {
     };
     rpa_killworkflows_node.prototype.connect = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, error_3;
+            var _a, error_4;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -494,9 +503,9 @@ var rpa_killworkflows_node = /** @class */ (function () {
                         this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_3 = _b.sent();
+                        error_4 = _b.sent();
                         this.localqueue = "";
-                        Util_1.Util.HandleError(this, error_3, null);
+                        Util_1.Util.HandleError(this, error_4, null);
                         setTimeout(this.connect.bind(this), (Math.floor(Math.random() * 6) + 1) * 2000);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
@@ -561,57 +570,63 @@ var rpa_killworkflows_node = /** @class */ (function () {
     };
     rpa_killworkflows_node.prototype.oninput = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var queue, priority, correlationId, rpacommand, expiration;
+            var queue, priority, correlationId, rpacommand, expiration, error_5;
             return __generator(this, function (_a) {
-                try {
-                    this.node.status({});
-                    if (this.client == null || !this.client.signedin) {
-                        throw new Error("Not connected to openflow");
-                    }
-                    if (Util_1.Util.IsNullEmpty(this.localqueue)) {
-                        throw new Error("Queue not registered yet");
-                    }
-                    queue = this.config.queue;
-                    if (queue == "none")
-                        queue = "";
-                    if (Util_1.Util.IsNullEmpty(queue) && !Util_1.Util.IsNullEmpty(msg.targetid)) {
-                        queue = msg.targetid;
-                    }
-                    priority = 1;
-                    if (!Util_1.Util.IsNullEmpty(msg.priority)) {
-                        priority = msg.priority;
-                    }
-                    correlationId = msg._msgid || Util_1.Util.GetUniqueIdentifier();
-                    rpa_killworkflows_node.messages[correlationId] = msg;
-                    // if (msg.payload == null || typeof msg.payload == "string" || typeof msg.payload == "number") {
-                    //     msg.payload = { "data": msg.payload };
-                    // }
-                    if (Util_1.Util.IsNullEmpty(queue)) {
-                        this.node.status({ fill: "red", shape: "dot", text: "robot is mandatory" });
-                        return [2 /*return*/];
-                    }
-                    rpacommand = {
-                        command: "killallworkflows",
-                        jwt: msg.jwt,
-                        // Adding expiry to the rpacommand as a timestamp for when the RPA message is expected to timeout from the message queue
-                        // Currently set to 20 seconds into the future
-                        expiry: Math.floor((new Date().getTime()) / 1000) + 500,
-                        data: {}
-                    };
-                    expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-                    this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId: correlationId, striptoken: true, jwt: msg.jwt }, null);
-                    this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        this.node.status({});
+                        if (this.client == null || !this.client.signedin) {
+                            throw new Error("Not connected to openflow");
+                        }
+                        if (Util_1.Util.IsNullEmpty(this.localqueue)) {
+                            throw new Error("Queue not registered yet");
+                        }
+                        queue = this.config.queue;
+                        if (queue == "none")
+                            queue = "";
+                        if (Util_1.Util.IsNullEmpty(queue) && !Util_1.Util.IsNullEmpty(msg.targetid)) {
+                            queue = msg.targetid;
+                        }
+                        priority = 1;
+                        if (!Util_1.Util.IsNullEmpty(msg.priority)) {
+                            priority = msg.priority;
+                        }
+                        correlationId = msg._msgid || Util_1.Util.GetUniqueIdentifier();
+                        rpa_killworkflows_node.messages[correlationId] = msg;
+                        // if (msg.payload == null || typeof msg.payload == "string" || typeof msg.payload == "number") {
+                        //     msg.payload = { "data": msg.payload };
+                        // }
+                        if (Util_1.Util.IsNullEmpty(queue)) {
+                            this.node.status({ fill: "red", shape: "dot", text: "robot is mandatory" });
+                            return [2 /*return*/];
+                        }
+                        rpacommand = {
+                            command: "killallworkflows",
+                            jwt: msg.jwt,
+                            // Adding expiry to the rpacommand as a timestamp for when the RPA message is expected to timeout from the message queue
+                            // Currently set to 20 seconds into the future
+                            expiry: Math.floor((new Date().getTime()) / 1000) + 500,
+                            data: {}
+                        };
+                        expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
+                        return [4 /*yield*/, this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId: correlationId, striptoken: true, jwt: msg.jwt }, null)];
+                    case 1:
+                        _a.sent();
+                        this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_5 = _a.sent();
+                        try {
+                            this.node.status({ fill: "red", shape: "dot", text: error_5 });
+                            msg.error = error_5;
+                            this.node.send([null, null, msg]);
+                        }
+                        catch (error) {
+                        }
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
                 }
-                catch (error) {
-                    try {
-                        this.node.status({ fill: "red", shape: "dot", text: error });
-                        msg.error = error;
-                        this.node.send([null, null, msg]);
-                    }
-                    catch (error) {
-                    }
-                }
-                return [2 /*return*/];
             });
         });
     };
@@ -642,65 +657,13 @@ var rpa_killworkflows_node = /** @class */ (function () {
 exports.rpa_killworkflows_node = rpa_killworkflows_node;
 function get_rpa_detectors(req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var result, error_4;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, Util_1.Util.client.Query({
-                            collectionname: 'openrpa', query: { _type: "detector" },
-                            projection: { name: 1 }, orderby: { name: -1 }, top: 1000
-                        })];
-                case 1:
-                    result = _a.sent();
-                    res.json(result);
-                    return [3 /*break*/, 3];
-                case 2:
-                    error_4 = _a.sent();
-                    err(error_4);
-                    res.status(500).json(error_4);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.get_rpa_detectors = get_rpa_detectors;
-function get_rpa_robots_roles(req, res) {
-    return __awaiter(this, void 0, void 0, function () {
-        var result, error_5;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, Util_1.Util.client.Query({
-                            collectionname: 'users', query: { $or: [{ _type: "user", _rpaheartbeat: { "$exists": true } }, { _type: "role", rparole: true }] },
-                            projection: { name: 1 }, orderby: { name: -1 }, top: 1000
-                        })];
-                case 1:
-                    result = _a.sent();
-                    res.json(result);
-                    return [3 /*break*/, 3];
-                case 2:
-                    error_5 = _a.sent();
-                    err(error_5);
-                    res.status(500).json(error_5);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.get_rpa_robots_roles = get_rpa_robots_roles;
-function get_rpa_robots(req, res) {
-    return __awaiter(this, void 0, void 0, function () {
         var result, error_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
                     return [4 /*yield*/, Util_1.Util.client.Query({
-                            collectionname: 'users', query: { _type: "user", _rpaheartbeat: { "$exists": true } },
+                            collectionname: 'openrpa', query: { _type: "detector" },
                             projection: { name: 1 }, orderby: { name: -1 }, top: 1000
                         })];
                 case 1:
@@ -717,10 +680,62 @@ function get_rpa_robots(req, res) {
         });
     });
 }
+exports.get_rpa_detectors = get_rpa_detectors;
+function get_rpa_robots_roles(req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var result, error_7;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, Util_1.Util.client.Query({
+                            collectionname: 'users', query: { $or: [{ _type: "user", _rpaheartbeat: { "$exists": true } }, { _type: "role", rparole: true }] },
+                            projection: { name: 1 }, orderby: { name: -1 }, top: 1000
+                        })];
+                case 1:
+                    result = _a.sent();
+                    res.json(result);
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_7 = _a.sent();
+                    err(error_7);
+                    res.status(500).json(error_7);
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.get_rpa_robots_roles = get_rpa_robots_roles;
+function get_rpa_robots(req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var result, error_8;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, Util_1.Util.client.Query({
+                            collectionname: 'users', query: { _type: "user", _rpaheartbeat: { "$exists": true } },
+                            projection: { name: 1 }, orderby: { name: -1 }, top: 1000
+                        })];
+                case 1:
+                    result = _a.sent();
+                    res.json(result);
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_8 = _a.sent();
+                    err(error_8);
+                    res.status(500).json(error_8);
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
 exports.get_rpa_robots = get_rpa_robots;
 function get_rpa_workflows(req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var query, result, error_7;
+        var query, result, error_9;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -745,9 +760,9 @@ function get_rpa_workflows(req, res) {
                     res.json(result);
                     return [3 /*break*/, 3];
                 case 2:
-                    error_7 = _a.sent();
-                    err(error_7);
-                    res.status(500).json(error_7);
+                    error_9 = _a.sent();
+                    err(error_9);
+                    res.status(500).json(error_9);
                     return [3 /*break*/, 3];
                 case 3: return [2 /*return*/];
             }
