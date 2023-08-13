@@ -162,7 +162,9 @@ export class addworkitems {
                 }
 
             });
-            await this.client.PushWorkitems({ items, wiqid, wiq, success_wiq, failed_wiq })
+            var results = await this.client.PushWorkitems({ items, wiqid, wiq, success_wiq, failed_wiq })
+            Util.SetMessageProperty(msg, "workitems", results);
+
             this.node.send(msg);
             this.node.status({});
         } catch (error) {

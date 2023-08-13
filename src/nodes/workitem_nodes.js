@@ -195,7 +195,7 @@ var addworkitems = /** @class */ (function () {
     }
     addworkitems.prototype.oninput = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var items, nextrun_1, wipriority_1, success_wiq, failed_wiq, _a, wiq, wiqid, error_2;
+            var items, nextrun_1, wipriority_1, success_wiq, failed_wiq, _a, wiq, wiqid, results, error_2;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -243,7 +243,8 @@ var addworkitems = /** @class */ (function () {
                         });
                         return [4 /*yield*/, this.client.PushWorkitems({ items: items, wiqid: wiqid, wiq: wiq, success_wiq: success_wiq, failed_wiq: failed_wiq })];
                     case 6:
-                        _b.sent();
+                        results = _b.sent();
+                        Util_1.Util.SetMessageProperty(msg, "workitems", results);
                         this.node.send(msg);
                         this.node.status({});
                         return [3 /*break*/, 8];
