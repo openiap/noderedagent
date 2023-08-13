@@ -46,7 +46,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.get_rpa_workflows = exports.get_rpa_robots = exports.get_rpa_robots_roles = exports.get_rpa_detectors = exports.rpa_killworkflows_node = exports.rpa_workflow_node = exports.rpa_detector_node = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var info = nodeapi_1.config.info, warn = nodeapi_1.config.warn, err = nodeapi_1.config.err;
@@ -190,7 +190,7 @@ var rpa_detector_node = /** @class */ (function () {
     return rpa_detector_node;
 }());
 exports.rpa_detector_node = rpa_detector_node;
-var rpa_workflow_node = /** @class */ (function () {
+var rpa_workflow_node = exports.rpa_workflow_node = /** @class */ (function () {
     function rpa_workflow_node(config) {
         this.config = config;
         this.node = null;
@@ -444,8 +444,7 @@ var rpa_workflow_node = /** @class */ (function () {
     rpa_workflow_node.messages = [];
     return rpa_workflow_node;
 }());
-exports.rpa_workflow_node = rpa_workflow_node;
-var rpa_killworkflows_node = /** @class */ (function () {
+var rpa_killworkflows_node = exports.rpa_killworkflows_node = /** @class */ (function () {
     function rpa_killworkflows_node(config) {
         this.config = config;
         this.node = null;
@@ -654,7 +653,6 @@ var rpa_killworkflows_node = /** @class */ (function () {
     rpa_killworkflows_node.messages = [];
     return rpa_killworkflows_node;
 }());
-exports.rpa_killworkflows_node = rpa_killworkflows_node;
 function get_rpa_detectors(req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var result, error_6;

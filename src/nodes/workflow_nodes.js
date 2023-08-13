@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.assign_workflow_node = exports.get_workflows = exports.get_workflow_forms = exports.workflow_out_node = exports.workflow_in_node = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var RED = require("node-red");

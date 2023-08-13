@@ -1,0 +1,14 @@
+{
+    "name": "noderedagent",
+    "id": "noderedagent",
+    "description": "noderedagent",
+    "version": "0.0.1",
+    "fileid": "local",
+    "language": "nodejs",
+    "daemon": false,
+    "chrome": false,
+    "chromium": false,
+    "main": "src/main.js",
+    "_type": "package",
+    "_version": 1
+  }
