@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.amqp_exchange_node = exports.amqp_acknowledgment_node = exports.amqp_publisher_node = exports.amqp_consumer_node = exports.amqp_connection = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var nodeapi_2 = require("@openiap/nodeapi");
@@ -255,7 +255,7 @@ var amqp_consumer_node = /** @class */ (function () {
     return amqp_consumer_node;
 }());
 exports.amqp_consumer_node = amqp_consumer_node;
-var amqp_publisher_node = exports.amqp_publisher_node = /** @class */ (function () {
+var amqp_publisher_node = /** @class */ (function () {
     function amqp_publisher_node(config) {
         this.config = config;
         this.node = null;
@@ -465,6 +465,7 @@ var amqp_publisher_node = exports.amqp_publisher_node = /** @class */ (function 
     amqp_publisher_node.payloads = {};
     return amqp_publisher_node;
 }());
+exports.amqp_publisher_node = amqp_publisher_node;
 var amqp_acknowledgment_node = /** @class */ (function () {
     function amqp_acknowledgment_node(config) {
         this.config = config;

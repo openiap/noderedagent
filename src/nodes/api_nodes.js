@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.custom = exports.memorydump = exports.drop_collection = exports.list_collections = exports.api_watch = exports.api_aggregate = exports.upload_file = exports.download_file = exports.revoke_permission = exports.grant_permission = exports.api_updatedocument = exports.get_api_users = exports.get_api_userroles = exports.get_api_roles = exports.api_deletemany = exports.api_delete = exports.api_addorupdate = exports.api_update = exports.api_addmany = exports.api_add = exports.api_get = exports.api_get_jwt = exports.api_credentials = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var info = nodeapi_1.config.info, warn = nodeapi_1.config.warn, err = nodeapi_1.config.err;
@@ -391,7 +391,7 @@ var api_add = /** @class */ (function () {
                             Promises.push(this.client.InsertOne({ collectionname: collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }));
                         }
                         this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                        return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p.catch(function (e) { return e; }); }))];
+                        return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p["catch"](function (e) { return e; }); }))];
                     case 8:
                         tempresults = _a.sent();
                         results = results.concat(tempresults);
@@ -905,7 +905,7 @@ var api_delete = /** @class */ (function () {
                             Promises.push(this.client.DeleteOne({ collectionname: collectionname, id: id, jwt: msg.jwt }));
                         }
                         this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                        return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p.catch(function (e) { return e; }); }))];
+                        return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p["catch"](function (e) { return e; }); }))];
                     case 7:
                         tempresults = _a.sent();
                         results = results.concat(tempresults);

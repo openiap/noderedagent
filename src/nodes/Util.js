@@ -1,5 +1,5 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.Util = exports.NodeRedUser = void 0;
 var RED = require("node-red");
 var nodeapi_1 = require("@openiap/nodeapi");
@@ -17,7 +17,7 @@ var NodeRedUser = /** @class */ (function () {
     return NodeRedUser;
 }());
 exports.NodeRedUser = NodeRedUser;
-var Util = exports.Util = /** @class */ (function () {
+var Util = /** @class */ (function () {
     function Util() {
     }
     Util.EvaluateNodeProperty = function (node, msg, name, ignoreerrors) {
@@ -134,4 +134,5 @@ var Util = exports.Util = /** @class */ (function () {
     Util.Delay = function (ms) { return new Promise(function (res) { return setTimeout(res, ms); }); };
     return Util;
 }());
+exports.Util = Util;
 //# sourceMappingURL=Util.js.map

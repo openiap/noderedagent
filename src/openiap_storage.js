@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.openiap_storage = exports.noderednpmrc = void 0;
 var fs = require("fs");
 var path = require("path");
@@ -423,7 +423,7 @@ var openiap_storage = /** @class */ (function () {
                     "repository": {
                         "type": "git",
                         "url": "git+https://github.com/open-rpa/openflow.git"
-                    },
+                    }
                 };
                 // Let's not !
                 if (!fs.existsSync(packageFile)) {
@@ -734,7 +734,7 @@ var openiap_storage = /** @class */ (function () {
                         item = {
                             name: "credentials for " + this.nodered_id,
                             credentials: credentials, credentialsarray: credentialsarray, _type: "credential", nodered_id: this.nodered_id,
-                            _encrypt: ["credentials", "credentialsarray"],
+                            _encrypt: ["credentials", "credentialsarray"]
                         };
                         if (user != null) {
                             item.deployedby = user.username;
@@ -1127,7 +1127,7 @@ var openiap_storage = /** @class */ (function () {
                         if (!(result.length === 0)) return [3 /*break*/, 3];
                         item_1 = {
                             name: "settings for " + this.nodered_id,
-                            settings: JSON.stringify(settings), _type: "setting", nodered_id: this.nodered_id,
+                            settings: JSON.stringify(settings), _type: "setting", nodered_id: this.nodered_id
                         };
                         if (user != null) {
                             item_1.deployedby = user.username;

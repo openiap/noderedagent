@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.middlewareauth = exports.CachedUser = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var info = nodeapi_1.config.info, warn = nodeapi_1.config.warn, err = nodeapi_1.config.err;
@@ -49,7 +49,7 @@ var CachedUser = /** @class */ (function () {
     return CachedUser;
 }());
 exports.CachedUser = CachedUser;
-var middlewareauth = exports.middlewareauth = /** @class */ (function () {
+var middlewareauth = /** @class */ (function () {
     function middlewareauth() {
     }
     middlewareauth.getUser = function (authorization) {
@@ -67,8 +67,7 @@ var middlewareauth = exports.middlewareauth = /** @class */ (function () {
     };
     middlewareauth.process = function (client, req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var authorization, cacheduser, token, result, user, allowed, error_1, b64auth, login, password, result, user, allowed, error_2;
-            var _a;
+            var authorization, cacheduser, token, result, user, allowed, error_1, b64auth, _a, login, password, result, user, allowed, error_2;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -114,7 +113,7 @@ var middlewareauth = exports.middlewareauth = /** @class */ (function () {
                         return [2 /*return*/];
                     case 5:
                         b64auth = (authorization || '').split(' ')[1] || '';
-                        login = (_a = Buffer.from(b64auth, "base64").toString().split(':'), _a[0]), password = _a[1];
+                        _a = Buffer.from(b64auth, "base64").toString().split(':'), login = _a[0], password = _a[1];
                         if (!(login && password)) return [3 /*break*/, 11];
                         _b.label = 6;
                     case 6:
@@ -164,4 +163,5 @@ var middlewareauth = exports.middlewareauth = /** @class */ (function () {
     middlewareauth.api_role = "";
     return middlewareauth;
 }());
+exports.middlewareauth = middlewareauth;
 //# sourceMappingURL=middlewareauth.js.map

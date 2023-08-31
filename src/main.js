@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 var openiap_storage_1 = require("./openiap_storage");
 var nodeapi_1 = require("@openiap/nodeapi");
 var nodeapi_2 = require("@openiap/nodeapi");
@@ -143,7 +143,7 @@ function main() {
                         userinfo_endpoint: process.env.oidc_userinfo_endpoint,
                         issuer: process.env.oidc_issuer,
                         authorization_endpoint: process.env.oidc_authorization_endpoint,
-                        token_endpoint: process.env.oidc_token_endpoint,
+                        token_endpoint: process.env.oidc_token_endpoint
                     };
                     if (!(process.env.oidc_config != null && process.env.oidc_config != "")) return [3 /*break*/, 3];
                     return [4 /*yield*/, get(process.env.oidc_config)];
