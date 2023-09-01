@@ -1,7 +1,9 @@
-import { openiap, Workitem, WorkitemFile } from "@openiap/nodeapi";
+import { apiinstrumentation, openiap, Workitem, WorkitemFile } from "@openiap/nodeapi";
 import * as RED from "node-red";
 import { Red } from "node-red";
 import { Util } from "./Util";
+import { Logger } from "../Logger";
+
 const pako = require('pako');
 const fs = require('fs');
 const path = require("path");
@@ -56,44 +58,47 @@ export class addworkitem {
         }
     }
     async oninput(msg: any) {
-        try {
-            this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
-            const payload = await Util.EvaluateNodeProperty<any>(this, msg, "payload");
-            const files = await Util.EvaluateNodeProperty<WorkitemFile[]>(this, msg, "files");
-            const topic = await Util.EvaluateNodeProperty<string>(this, msg, "topic");
-            const nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
-            const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
-            const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
-            const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
-            const { wiq, wiqid } = this.workitemqueue_config;
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api add workitem", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
+                const payload = await Util.EvaluateNodeProperty<any>(this, msg, "payload");
+                const files = await Util.EvaluateNodeProperty<WorkitemFile[]>(this, msg, "files");
+                const topic = await Util.EvaluateNodeProperty<string>(this, msg, "topic");
+                const nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
+                const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
+                const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
+                const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
+                const { wiq, wiqid } = this.workitemqueue_config;
 
-            if (!Util.IsNullUndefinded(files)) {
-                for (var i = 0; i < files.length; i++) {
-                    var file = files[i];
-                    if (file.file && (Array.isArray(file.file) || Buffer.isBuffer(file.file))) {
-                        if (Util.IsNullEmpty(file.filename)) throw new Error("filename is mandatory for each file")
-                        file.compressed = true;
-                        file.file = Buffer.from(pako.deflate(file.file));
-                    } else if (!Util.IsNullEmpty(file.filename)) {
-                        if (fs.existsSync(file.filename)) {
+                if (!Util.IsNullUndefinded(files)) {
+                    for (var i = 0; i < files.length; i++) {
+                        var file = files[i];
+                        if (file.file && (Array.isArray(file.file) || Buffer.isBuffer(file.file))) {
+                            if (Util.IsNullEmpty(file.filename)) throw new Error("filename is mandatory for each file")
                             file.compressed = true;
-                            file.file = Buffer.from(pako.deflate(fs.readFileSync(file.filename, null)));
-                            file.filename = path.basename(file.filename);
-                        } else {
-                            throw new Error("File not found " + file.filename)
+                            file.file = Buffer.from(pako.deflate(file.file));
+                        } else if (!Util.IsNullEmpty(file.filename)) {
+                            if (fs.existsSync(file.filename)) {
+                                file.compressed = true;
+                                file.file = Buffer.from(pako.deflate(fs.readFileSync(file.filename, null)));
+                                file.filename = path.basename(file.filename);
+                            } else {
+                                throw new Error("File not found " + file.filename)
+                            }
                         }
                     }
                 }
+                const result = await this.client.PushWorkitem({ payload, files, wiqid, wiq, name: topic, nextrun, priority: wipriority, success_wiq, failed_wiq })
+                if (!Util.IsNullEmpty(this.config.payload)) {
+                    Util.SetMessageProperty(msg, this.config.payload, result);
+                }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
             }
-            const result = await this.client.PushWorkitem({ payload, files, wiqid, wiq, name: topic, nextrun, priority: wipriority, success_wiq, failed_wiq })
-            if (!Util.IsNullEmpty(this.config.payload)) {
-                Util.SetMessageProperty(msg, this.config.payload, result);
-            }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         try {
@@ -132,44 +137,47 @@ export class addworkitems {
         }
     }
     async oninput(msg: any) {
-        try {
-            this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
-            const items = await Util.EvaluateNodeProperty<Workitem[]>(this, msg, "workitems");
-            const nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
-            const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
-            const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
-            const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
-            const { wiq, wiqid } = this.workitemqueue_config;
-            if (!Array.isArray(items)) throw new Error("workitems must be an array of Workitems")
-            items.forEach(item => {
-                if (!Util.IsNullEmpty(nextrun)) item.nextrun = nextrun;
-                if (!Util.IsNullEmpty(wipriority)) item.priority = wipriority;
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api add workitems", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
+                const items = await Util.EvaluateNodeProperty<Workitem[]>(this, msg, "workitems");
+                const nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
+                const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
+                const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
+                const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
+                const { wiq, wiqid } = this.workitemqueue_config;
+                if (!Array.isArray(items)) throw new Error("workitems must be an array of Workitems")
+                items.forEach(item => {
+                    if (!Util.IsNullEmpty(nextrun)) item.nextrun = nextrun;
+                    if (!Util.IsNullEmpty(wipriority)) item.priority = wipriority;
 
-                if (!Util.IsNullUndefinded(item.files)) {
-                    for (var i = 0; i < item.files.length; i++) {
-                        var file = item.files[i];
-                        if (file.file && Array.isArray(file.file)) {
-                            file.compressed = true;
-                            file.file = Buffer.from(pako.deflate(file.file))
-                        } else if (Util.IsNullEmpty(file.filename)) {
-                            if (fs.existsSync(file.filename)) {
+                    if (!Util.IsNullUndefinded(item.files)) {
+                        for (var i = 0; i < item.files.length; i++) {
+                            var file = item.files[i];
+                            if (file.file && Array.isArray(file.file)) {
                                 file.compressed = true;
-                                file.file = Buffer.from(pako.deflate(fs.readFileSync(file.filename, null)))
-                                file.filename = path.basename(file.filename);
+                                file.file = Buffer.from(pako.deflate(file.file))
+                            } else if (Util.IsNullEmpty(file.filename)) {
+                                if (fs.existsSync(file.filename)) {
+                                    file.compressed = true;
+                                    file.file = Buffer.from(pako.deflate(fs.readFileSync(file.filename, null)))
+                                    file.filename = path.basename(file.filename);
+                                }
                             }
                         }
                     }
-                }
 
-            });
-            var results = await this.client.PushWorkitems({ items, wiqid, wiq, success_wiq, failed_wiq })
-            Util.SetMessageProperty(msg, "workitems", results);
+                });
+                var results = await this.client.PushWorkitems({ items, wiqid, wiq, success_wiq, failed_wiq })
+                Util.SetMessageProperty(msg, "workitems", results);
 
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            }
+        });
     }
     async onclose(removed: boolean, done: any) {
         try {
@@ -207,75 +215,78 @@ export class updateworkitem {
         }
     }
     async oninput(msg: any) {
-        try {
-            this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
-            const workitem = await Util.EvaluateNodeProperty<Workitem>(this, msg, "workitem");
-            const files = await Util.EvaluateNodeProperty<WorkitemFile[]>(this, msg, "files");
-            const state: any = await Util.EvaluateNodeProperty<string>(this, msg, "state");
-            const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
-            const _errormessage = await Util.EvaluateNodeProperty<string>(this, msg, "error");
-            const ignoremaxretries = await Util.EvaluateNodeProperty<boolean>(this, msg, "ignoremaxretries");
-            const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
-            const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
-            var nextrun = undefined;
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api update workitem", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
             try {
-                const _nextrun = await Util.EvaluateNodeProperty<string>(this, msg, "nextrun");
-                if(!Util.IsNullEmpty(_nextrun)) nextrun = new Date(_nextrun);
-            } catch (error) {
-                nextrun = undefined
-            }
-            
-            var errorsource: string = "";
+                this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
+                const workitem = await Util.EvaluateNodeProperty<Workitem>(this, msg, "workitem");
+                const files = await Util.EvaluateNodeProperty<WorkitemFile[]>(this, msg, "files");
+                const state: any = await Util.EvaluateNodeProperty<string>(this, msg, "state");
+                const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
+                const _errormessage = await Util.EvaluateNodeProperty<string>(this, msg, "error");
+                const ignoremaxretries = await Util.EvaluateNodeProperty<boolean>(this, msg, "ignoremaxretries");
+                const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
+                const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
+                var nextrun = undefined;
+                try {
+                    const _nextrun = await Util.EvaluateNodeProperty<string>(this, msg, "nextrun");
+                    if(!Util.IsNullEmpty(_nextrun)) nextrun = new Date(_nextrun);
+                } catch (error) {
+                    nextrun = undefined
+                }
+                
+                var errorsource: string = "";
 
-            if (!Util.IsNullEmpty(msg.error) && (Util.IsNullUndefinded(workitem) || Util.IsNullEmpty(workitem._id))) {
-                this.node.status({ fill: "blue", shape: "dot", text: "Ignore missing workitem" });
-                return;
-            }
-            // let { _id, name, payload, errortype, errormessage } = workitem;
-            if (!Util.IsNullEmpty(_errormessage) && Util.IsNullEmpty(workitem.errormessage)) {
-                workitem.errormessage = _errormessage.toString();
-            }
-            if(!Util.IsNullEmpty(this.config.state)) {
-                workitem.state = this.config.state;
-            }
-            if(wipriority > 0 && workitem.priority == 0) {
-                workitem.priority = wipriority;
-            }
-            if (!Util.IsNullEmpty(success_wiq)) {
-                workitem.success_wiq = success_wiq
-            }
-            if (!Util.IsNullEmpty(failed_wiq)) {
-                workitem.failed_wiq = failed_wiq;
-            }
-            if (!Util.IsNullEmpty(nextrun)) {
-                workitem.nextrun = nextrun;
-            }
-            if(files != null && files.length > 0) {
-                if(workitem.files == null) workitem.files = [];
-                files.forEach(file => {
-                    workitem.files.push(file);
-                });
-            }
-            try {
-                if(!Util.IsNullEmpty(workitem.lastrun)) workitem.lastrun = new Date(workitem.lastrun);
+                if (!Util.IsNullEmpty(msg.error) && (Util.IsNullUndefinded(workitem) || Util.IsNullEmpty(workitem._id))) {
+                    this.node.status({ fill: "blue", shape: "dot", text: "Ignore missing workitem" });
+                    return;
+                }
+                // let { _id, name, payload, errortype, errormessage } = workitem;
+                if (!Util.IsNullEmpty(_errormessage) && Util.IsNullEmpty(workitem.errormessage)) {
+                    workitem.errormessage = _errormessage.toString();
+                }
+                if(!Util.IsNullEmpty(this.config.state)) {
+                    workitem.state = this.config.state;
+                }
+                if(wipriority > 0 && workitem.priority == 0) {
+                    workitem.priority = wipriority;
+                }
+                if (!Util.IsNullEmpty(success_wiq)) {
+                    workitem.success_wiq = success_wiq
+                }
+                if (!Util.IsNullEmpty(failed_wiq)) {
+                    workitem.failed_wiq = failed_wiq;
+                }
+                if (!Util.IsNullEmpty(nextrun)) {
+                    workitem.nextrun = nextrun;
+                }
+                if(files != null && files.length > 0) {
+                    if(workitem.files == null) workitem.files = [];
+                    files.forEach(file => {
+                        workitem.files.push(file);
+                    });
+                }
+                try {
+                    if(!Util.IsNullEmpty(workitem.lastrun)) workitem.lastrun = new Date(workitem.lastrun);
+                } catch (error) {
+                    delete workitem.lastrun
+                }
+                try {
+                    if(!Util.IsNullEmpty(workitem.nextrun)) workitem.nextrun = new Date(workitem.nextrun);
+                } catch (error) {
+                    delete workitem.nextrun
+                }
+                const result = await this.client.UpdateWorkitem({ workitem, ignoremaxretries })
+                if (!Util.IsNullEmpty(this.config.workitem)) {
+                    Util.SetMessageProperty(msg, this.config.workitem, result);
+                }
+                this.node.send(msg);
+                this.node.status({});
             } catch (error) {
-                delete workitem.lastrun
+                console.log(error)
+                Util.HandleError(this, error, msg);
             }
-            try {
-                if(!Util.IsNullEmpty(workitem.nextrun)) workitem.nextrun = new Date(workitem.nextrun);
-            } catch (error) {
-                delete workitem.nextrun
-            }
-            const result = await this.client.UpdateWorkitem({ workitem, ignoremaxretries })
-            if (!Util.IsNullEmpty(this.config.workitem)) {
-                Util.SetMessageProperty(msg, this.config.workitem, result);
-            }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            console.log(error)
-            Util.HandleError(this, error, msg);
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         try {
@@ -318,44 +329,47 @@ export class popworkitem {
         }
     }
     async oninput(msg: any) {
-        try {
-            this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
-            const { wiq, wiqid } = this.workitemqueue_config;
-            let download = this.config.download;
-            if (Util.IsNullEmpty(download)) download = false;
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api pop workitem", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
+                const { wiq, wiqid } = this.workitemqueue_config;
+                let download = this.config.download;
+                if (Util.IsNullEmpty(download)) download = false;
 
-            const result = await this.client.PopWorkitem({ wiqid, wiq, includefiles: download, compressed: false })
-            var files: WorkitemFile[] = null;
-            if (result != null) {
-                files = [];
-                if (download && result.files && result.files.length > 0) {
-                    for (let i = 0; i < result.files.length; i++) {
-                        var file = result.files[i];
-                        if (!Util.IsNullEmpty(file._id)) {
-                            files.push(file);
-                            // var down = await this.client.GetFile({ id: file._id, compress: true });
-                            // // (file as any).file = Buffer.from(down.file, 'base64');
-                            // var data = Buffer.from(down.file, 'base64');
-                            // (file as any).file = Buffer.from(pako.inflate(data));
-                            // files.push(file);
+                const result = await this.client.PopWorkitem({ wiqid, wiq, includefiles: download, compressed: false })
+                var files: WorkitemFile[] = null;
+                if (result != null) {
+                    files = [];
+                    if (download && result.files && result.files.length > 0) {
+                        for (let i = 0; i < result.files.length; i++) {
+                            var file = result.files[i];
+                            if (!Util.IsNullEmpty(file._id)) {
+                                files.push(file);
+                                // var down = await this.client.GetFile({ id: file._id, compress: true });
+                                // // (file as any).file = Buffer.from(down.file, 'base64');
+                                // var data = Buffer.from(down.file, 'base64');
+                                // (file as any).file = Buffer.from(pako.inflate(data));
+                                // files.push(file);
+                            }
                         }
                     }
+                    if (!Util.IsNullEmpty(this.config.workitem)) {
+                        Util.SetMessageProperty(msg, this.config.workitem, result);
+                    }
+                    if (!Util.IsNullEmpty(this.config.files) && result) {
+                        Util.SetMessageProperty(msg, this.config.files, files);
+                    }
+                    this.node.send(msg);
+                    this.node.status({ fill: "green", shape: "dot", text: "successfully popped a Workitem" });
+                } else {
+                    this.node.send([null, msg]);
+                    this.node.status({ fill: "green", shape: "dot", text: "No more workitems" });
                 }
-                if (!Util.IsNullEmpty(this.config.workitem)) {
-                    Util.SetMessageProperty(msg, this.config.workitem, result);
-                }
-                if (!Util.IsNullEmpty(this.config.files) && result) {
-                    Util.SetMessageProperty(msg, this.config.files, files);
-                }
-                this.node.send(msg);
-                this.node.status({ fill: "green", shape: "dot", text: "successfully popped a Workitem" });
-            } else {
-                this.node.send([null, msg]);
-                this.node.status({ fill: "green", shape: "dot", text: "No more workitems" });
+            } catch (error) {
+                Util.HandleError(this, error, msg);
             }
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         try {
@@ -394,18 +408,21 @@ export class deleteworkitem {
         }
     }
     async oninput(msg: any) {
-        try {
-            this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
-            const workitem = await Util.EvaluateNodeProperty<Workitem>(this, msg, "workitem");
-            if (!Util.IsNullUndefinded(workitem) && !Util.IsNullEmpty(workitem._id)) {
-                await this.client.DeleteWorkitem({ _id: workitem._id })
-            } else {
-                throw new Error("workitem missing, or workitem is missing _id");
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api delete workitem", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
+                const workitem = await Util.EvaluateNodeProperty<Workitem>(this, msg, "workitem");
+                if (!Util.IsNullUndefinded(workitem) && !Util.IsNullEmpty(workitem._id)) {
+                    await this.client.DeleteWorkitem({ _id: workitem._id })
+                } else {
+                    throw new Error("workitem missing, or workitem is missing _id");
+                }
+                this.node.send(msg);
+            } catch (error) {
+                Util.HandleError(this, error, msg);
             }
-            this.node.send(msg);
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         try {

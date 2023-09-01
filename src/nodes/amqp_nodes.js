@@ -42,6 +42,8 @@ var nodeapi_2 = require("@openiap/nodeapi");
 var info = nodeapi_2.config.info, warn = nodeapi_2.config.warn, err = nodeapi_2.config.err;
 var RED = require("node-red");
 var Util_1 = require("./Util");
+var api_1 = require("@opentelemetry/api");
+var Logger_1 = require("../Logger");
 var amqp_connection = /** @class */ (function () {
     function amqp_connection(config) {
         var _this = this;
@@ -188,12 +190,16 @@ var amqp_consumer_node = /** @class */ (function () {
     };
     amqp_consumer_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var span, error_3;
+            var t, ctx, error_3;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        span = null;
+                        t = api_1.trace.getSpan(api_1.context.active());
+                        if (t != null) {
+                            ctx = t.spanContext();
+                            console.log("OnMessage traceid" + ctx.traceId + " spanid: " + ctx.spanId);
+                        }
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 6, 7, 8]);
@@ -223,9 +229,7 @@ var amqp_consumer_node = /** @class */ (function () {
                         error_3 = _a.sent();
                         Util_1.Util.HandleError(this, error_3, null);
                         return [3 /*break*/, 8];
-                    case 7:
-                        span === null || span === void 0 ? void 0 : span.end();
-                        return [7 /*endfinally*/];
+                    case 7: return [7 /*endfinally*/];
                     case 8: return [2 /*return*/];
                 }
             });
@@ -345,7 +349,9 @@ var amqp_publisher_node = /** @class */ (function () {
                             delete amqp_publisher_node.payloads[payload._msgid];
                         }
                     }
-                    result.payload = payload;
+                    else {
+                        result = payload;
+                    }
                     if (!Util_1.Util.IsNullEmpty(jwt))
                         result.jwt = jwt;
                     if (!Util_1.Util.IsNullUndefinded(user))
@@ -369,75 +375,86 @@ var amqp_publisher_node = /** @class */ (function () {
         });
     };
     amqp_publisher_node.prototype.oninput = function (msg) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var span, queuename, exchangename, routingkey, striptoken, priority, data, expiration, error_5, error_6;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        span = null;
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 9, 10, 11]);
-                        this.node.status({});
-                        if (!this.client.connected) {
-                            throw new Error("Not connected to openflow");
+            var logmsg;
+            var _this = this;
+            return __generator(this, function (_b) {
+                logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
+                nodeapi_1.apiinstrumentation.With("Publisher Node Send", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
+                    var t, ctx, queuename, exchangename, routingkey, striptoken, priority, data, expiration, error_5, error_6;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                _a.trys.push([0, 8, 9, 10]);
+                                t = api_1.trace.getSpan(api_1.context.active());
+                                if (t != null) {
+                                    ctx = t.spanContext();
+                                    console.log("oninput traceid" + ctx.traceId + " spanid: " + ctx.spanId);
+                                }
+                                this.node.status({});
+                                if (!this.client.connected) {
+                                    throw new Error("Not connected to openflow");
+                                }
+                                if (!this.client.signedin) {
+                                    throw new Error("Not signed to openflow");
+                                }
+                                if (this.localqueue == null || this.localqueue == "") {
+                                    throw new Error("Queue not registered yet");
+                                }
+                                return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "queue")];
+                            case 1:
+                                queuename = _a.sent();
+                                return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "exchange")];
+                            case 2:
+                                exchangename = _a.sent();
+                                return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "routingkey")];
+                            case 3:
+                                routingkey = _a.sent();
+                                striptoken = this.config.striptoken;
+                                priority = 1;
+                                if (!Util_1.Util.IsNullEmpty(msg.priority)) {
+                                    priority = msg.priority;
+                                }
+                                if (!Util_1.Util.IsNullEmpty(msg.striptoken)) {
+                                    striptoken = msg.striptoken;
+                                }
+                                data = {};
+                                // const [traceId, spanId] = Logger.otel.GetTraceSpanId(span);
+                                data.payload = msg.payload;
+                                data.jwt = msg.jwt;
+                                data._id = msg._id;
+                                data._msgid = msg._msgid;
+                                expiration = (typeof msg.expiration == 'number' ? msg.expiration : 5000);
+                                this.node.status({ fill: "blue", shape: "dot", text: "Sending message ..." });
+                                _a.label = 4;
+                            case 4:
+                                _a.trys.push([4, 6, , 7]);
+                                return [4 /*yield*/, this.client.QueueMessage({ expiration: expiration, correlationId: msg._msgid, exchangename: exchangename, routingkey: routingkey, queuename: queuename, replyto: this.localqueue, data: data, striptoken: striptoken }, null)];
+                            case 5:
+                                _a.sent();
+                                amqp_publisher_node.payloads[msg._msgid] = msg;
+                                return [3 /*break*/, 7];
+                            case 6:
+                                error_5 = _a.sent();
+                                data.error = error_5;
+                                this.node.send([null, data]);
+                                return [3 /*break*/, 7];
+                            case 7:
+                                this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
+                                return [3 /*break*/, 10];
+                            case 8:
+                                error_6 = _a.sent();
+                                Util_1.Util.HandleError(this, error_6, null);
+                                return [3 /*break*/, 10];
+                            case 9:
+                                span === null || span === void 0 ? void 0 : span.end();
+                                return [7 /*endfinally*/];
+                            case 10: return [2 /*return*/];
                         }
-                        if (!this.client.signedin) {
-                            throw new Error("Not signed to openflow");
-                        }
-                        if (this.localqueue == null || this.localqueue == "") {
-                            throw new Error("Queue not registered yet");
-                        }
-                        return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "queue")];
-                    case 2:
-                        queuename = _a.sent();
-                        return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "exchange")];
-                    case 3:
-                        exchangename = _a.sent();
-                        return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "routingkey")];
-                    case 4:
-                        routingkey = _a.sent();
-                        striptoken = this.config.striptoken;
-                        priority = 1;
-                        if (!Util_1.Util.IsNullEmpty(msg.priority)) {
-                            priority = msg.priority;
-                        }
-                        if (!Util_1.Util.IsNullEmpty(msg.striptoken)) {
-                            striptoken = msg.striptoken;
-                        }
-                        data = {};
-                        // const [traceId, spanId] = Logger.otel.GetTraceSpanId(span);
-                        data.payload = msg.payload;
-                        data.jwt = msg.jwt;
-                        data._id = msg._id;
-                        data._msgid = msg._msgid;
-                        expiration = (typeof msg.expiration == 'number' ? msg.expiration : 5000);
-                        this.node.status({ fill: "blue", shape: "dot", text: "Sending message ..." });
-                        _a.label = 5;
-                    case 5:
-                        _a.trys.push([5, 7, , 8]);
-                        return [4 /*yield*/, this.client.QueueMessage({ correlationId: msg._msgid, exchangename: exchangename, routingkey: routingkey, queuename: queuename, replyto: this.localqueue, data: data, striptoken: striptoken }, null)];
-                    case 6:
-                        _a.sent();
-                        amqp_publisher_node.payloads[msg._msgid] = msg;
-                        return [3 /*break*/, 8];
-                    case 7:
-                        error_5 = _a.sent();
-                        data.error = error_5;
-                        this.node.send([null, data]);
-                        return [3 /*break*/, 8];
-                    case 8:
-                        this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
-                        return [3 /*break*/, 11];
-                    case 9:
-                        error_6 = _a.sent();
-                        Util_1.Util.HandleError(this, error_6, null);
-                        return [3 /*break*/, 11];
-                    case 10:
-                        span === null || span === void 0 ? void 0 : span.end();
-                        return [7 /*endfinally*/];
-                    case 11: return [2 /*return*/];
-                }
+                    });
+                }); });
+                return [2 /*return*/];
             });
         });
     };
@@ -479,38 +496,51 @@ var amqp_acknowledgment_node = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     amqp_acknowledgment_node.prototype.oninput = function (msg) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var span, data, error_7;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        span = null;
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 4, 5, 6]);
-                        this.node.status({});
-                        if (!msg.amqpacknowledgment) return [3 /*break*/, 3];
-                        data = {};
-                        data.payload = msg.payload;
-                        data.jwt = msg.jwt;
-                        data._msgid = msg._msgid;
-                        return [4 /*yield*/, msg.amqpacknowledgment(data)];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        this.node.send(msg);
-                        this.node.status({});
-                        return [3 /*break*/, 6];
-                    case 4:
-                        error_7 = _a.sent();
-                        err(error_7);
-                        return [3 /*break*/, 6];
-                    case 5:
-                        span === null || span === void 0 ? void 0 : span.end();
-                        return [7 /*endfinally*/];
-                    case 6: return [2 /*return*/];
-                }
+            var logmsg, traceId, spanId;
+            var _this = this;
+            return __generator(this, function (_b) {
+                logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
+                traceId = logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId;
+                spanId = logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId;
+                nodeapi_1.apiinstrumentation.With("Acknowledgment node", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
+                    var data, error_7;
+                    var _a;
+                    return __generator(this, function (_b) {
+                        switch (_b.label) {
+                            case 0:
+                                _b.trys.push([0, 3, 4, 5]);
+                                this.node.status({});
+                                if (!msg.amqpacknowledgment) return [3 /*break*/, 2];
+                                data = {};
+                                data.payload = msg.payload;
+                                data.jwt = msg.jwt;
+                                data._msgid = msg._msgid;
+                                console.log("acknowledging message " + msg._msgid + " traceId: " + traceId + " spanId: " + spanId);
+                                return [4 /*yield*/, msg.amqpacknowledgment(data)];
+                            case 1:
+                                _b.sent();
+                                _b.label = 2;
+                            case 2:
+                                this.node.send(msg);
+                                this.node.status({});
+                                return [3 /*break*/, 5];
+                            case 3:
+                                error_7 = _b.sent();
+                                err(error_7);
+                                return [3 /*break*/, 5];
+                            case 4:
+                                span === null || span === void 0 ? void 0 : span.end();
+                                if (logmsg != null) {
+                                    (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.nodeend(msg._msgid, this.node.id);
+                                }
+                                return [7 /*endfinally*/];
+                            case 5: return [2 /*return*/];
+                        }
+                    });
+                }); });
+                return [2 /*return*/];
             });
         });
     };

@@ -1,4 +1,4 @@
-import { config } from "@openiap/nodeapi";
+import { apiinstrumentation, config } from "@openiap/nodeapi";
 const { info, warn, err } = config;
 import * as os from "os";
 import * as RED from "node-red";
@@ -7,6 +7,7 @@ import * as path from "path"
 import { Red } from "node-red";
 import { Util } from "./Util";
 import { Base, openiap } from "@openiap/nodeapi";
+import { Logger } from "../Logger";
 const pako = require('pako');
 
 export interface Iapi_credentials {
@@ -55,55 +56,50 @@ export class api_get_jwt {
         return !isNaN(num)
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api get jwt", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api get jwt", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
 
-            let username: string = null;
-            let password: string = null;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            const config: api_credentials = RED.nodes.getNode(this.config.config);
-            if (!Util.IsNullUndefinded(config) && !Util.IsNullEmpty(config.username)) {
-                username = config.username;
-            }
-            if (!Util.IsNullUndefinded(config) && !Util.IsNullEmpty(config.password)) {
-                password = config.password;
-            }
-            if (!Util.IsNullEmpty(msg.username)) { username = msg.username; }
-            if (!Util.IsNullEmpty(msg.password)) { password = msg.password; }
+                let username: string = null;
+                let password: string = null;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                const config: api_credentials = RED.nodes.getNode(this.config.config);
+                if (!Util.IsNullUndefinded(config) && !Util.IsNullEmpty(config.username)) {
+                    username = config.username;
+                }
+                if (!Util.IsNullUndefinded(config) && !Util.IsNullEmpty(config.password)) {
+                    password = config.password;
+                }
+                if (!Util.IsNullEmpty(msg.username)) { username = msg.username; }
+                if (!Util.IsNullEmpty(msg.password)) { password = msg.password; }
 
 
-            this.node.status({ fill: "blue", shape: "dot", text: "Requesting token" });
-            let reply = null;
-            if (!Util.IsNullEmpty(username) && !Util.IsNullEmpty(password)) {
-                reply = await this.client.Signin({ username, password, validateonly: true, longtoken: this.config.longtoken})
-            } else if (this.config.refresh && !Util.IsNullEmpty(msg.jwt)) {
-                reply = await this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken})
-            } else {
-                reply = await this.client.Signin({ validateonly: true, longtoken: this.config.longtoken})
+                this.node.status({ fill: "blue", shape: "dot", text: "Requesting token" });
+                let reply = null;
+                if (!Util.IsNullEmpty(username) && !Util.IsNullEmpty(password)) {
+                    reply = await this.client.Signin({ username, password, validateonly: true, longtoken: this.config.longtoken})
+                } else if (this.config.refresh && !Util.IsNullEmpty(msg.jwt)) {
+                    reply = await this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken})
+                } else {
+                    reply = await this.client.Signin({ validateonly: true, longtoken: this.config.longtoken})
+                }
+                msg.jwt = reply.jwt;
+                msg.user = reply.user;
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                let message = error.message ? error.message : error;
+                Util.HandleError(this, message, msg);
+                this.node.status({ fill: 'red', shape: 'dot', text: message.toString().substr(0, 32) });
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            msg.jwt = reply.jwt;
-            msg.user = reply.user;
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            let message = error.message ? error.message : error;
-            Util.HandleError(this, message, msg);
-            this.node.status({ fill: 'red', shape: 'dot', text: message.toString().substr(0, 32) });
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -134,96 +130,91 @@ export class api_get {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api get jwt", traceId, spanId);
-        let span = null;
-        try {
-            if (!this.client.connected) {
-                await new Promise(r => setTimeout(r, 2000));
-            }
-            this.node.status({});
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
-            let query = await Util.EvaluateNodeProperty<any>(this, msg, "query");
-            let projection = await Util.EvaluateNodeProperty<string>(this, msg, "projection");
-            let orderby = await Util.EvaluateNodeProperty<any>(this, msg, "orderby");
-            let top = await Util.EvaluateNodeProperty<number>(this, msg, "top");
-            let skip = await Util.EvaluateNodeProperty<number>(this, msg, "skip");
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            top = parseInt(top as any);
-            skip = parseInt(skip as any);
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api get", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                if (!this.client.connected) {
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+                this.node.status({});
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                let query = await Util.EvaluateNodeProperty<any>(this, msg, "query");
+                let projection = await Util.EvaluateNodeProperty<string>(this, msg, "projection");
+                let orderby = await Util.EvaluateNodeProperty<any>(this, msg, "orderby");
+                let top = await Util.EvaluateNodeProperty<number>(this, msg, "top");
+                let skip = await Util.EvaluateNodeProperty<number>(this, msg, "skip");
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                top = parseInt(top as any);
+                skip = parseInt(skip as any);
 
-            if (!Util.IsNullEmpty(orderby) && Util.IsString(orderby)) {
-                if (orderby.indexOf("{") > -1) {
+                if (!Util.IsNullEmpty(orderby) && Util.IsString(orderby)) {
+                    if (orderby.indexOf("{") > -1) {
+                        try {
+                            orderby = JSON.parse(orderby);
+                        } catch (error) {
+                            Util.HandleError(this, "Error parsing orderby", msg);
+                            return;
+                        }
+                    }
+                }
+                if (!Util.IsNullEmpty(orderby) && Util.IsString(orderby)) {
+                    const field: string = orderby;
+                    orderby = {};
+                    orderby[field] = -1;
+                }
+                if (Util.IsNullEmpty(query)) {
+                    query = {} as any;
+                } else if (Util.IsString(query)) {
+                    query = JSON.parse(query);
+                }
+                if (Util.IsNullEmpty(projection)) {
+                    projection = {} as any;
+                } else if (Util.IsString(projection)) {
                     try {
-                        orderby = JSON.parse(orderby);
+                        projection = JSON.parse(projection);
                     } catch (error) {
-                        Util.HandleError(this, "Error parsing orderby", msg);
+                        Util.HandleError(this, "Error parsing projection", msg);
                         return;
                     }
                 }
-            }
-            if (!Util.IsNullEmpty(orderby) && Util.IsString(orderby)) {
-                const field: string = orderby;
-                orderby = {};
-                orderby[field] = -1;
-            }
-            if (Util.IsNullEmpty(query)) {
-                query = {} as any;
-            } else if (Util.IsString(query)) {
-                query = JSON.parse(query);
-            }
-            if (Util.IsNullEmpty(projection)) {
-                projection = {} as any;
-            } else if (Util.IsString(projection)) {
-                try {
-                    projection = JSON.parse(projection);
-                } catch (error) {
-                    Util.HandleError(this, "Error parsing projection", msg);
-                    return;
-                }
-            }
-            if (Util.IsNullEmpty(projection)) { projection = null; }
+                if (Util.IsNullEmpty(projection)) { projection = null; }
 
-            this.node.status({ fill: "blue", shape: "dot", text: "Getting query" });
-            let result: any[] = [];
-            const pageby: number = 250;
-            let subresult: any[] = [];
-            let take: number = (top > pageby ? pageby : top);
-            do {
-                if (subresult.length == pageby && result.length < top) {
-                    this.node.status({ fill: "blue", shape: "dot", text: "Getting " + skip + " " + (skip + pageby) });
-                    await Util.Delay(50);
-                }
-                if ((result.length + take) > top) {
-                    take = top - result.length;
-                }
-                subresult = await this.client.Query({ collectionname, query, projection, orderby, top: take, skip, jwt: msg.jwt });
-                skip += take;
-                result = result.concat(subresult);
-                if (result.length > top) {
-                    result = result.splice(0, top);
-                }
-            } while (subresult.length == pageby && result.length < top);
+                this.node.status({ fill: "blue", shape: "dot", text: "Getting query" });
+                let result: any[] = [];
+                const pageby: number = 250;
+                let subresult: any[] = [];
+                let take: number = (top > pageby ? pageby : top);
+                do {
+                    if (subresult.length == pageby && result.length < top) {
+                        this.node.status({ fill: "blue", shape: "dot", text: "Getting " + skip + " " + (skip + pageby) });
+                        await Util.Delay(50);
+                    }
+                    if ((result.length + take) > top) {
+                        take = top - result.length;
+                    }
+                    subresult = await this.client.Query({ collectionname, query, projection, orderby, top: take, skip, jwt: msg.jwt });
+                    skip += take;
+                    result = result.concat(subresult);
+                    if (result.length > top) {
+                        result = result.splice(0, top);
+                    }
+                } while (subresult.length == pageby && result.length < top);
 
-            if (!Util.IsNullEmpty(this.config.resultfield)) {
-                Util.SetMessageProperty(msg, this.config.resultfield, result);
+                if (!Util.IsNullEmpty(this.config.resultfield)) {
+                    Util.SetMessageProperty(msg, this.config.resultfield, result);
+                }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -256,91 +247,86 @@ export class api_add {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api add", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
+                // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
 
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
-            const entitytype = await Util.EvaluateNodeProperty<string>(this, msg, "entitytype");
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                const entitytype = await Util.EvaluateNodeProperty<string>(this, msg, "entitytype");
 
-            let writeconcern = this.config.writeconcern;
-            let journal = this.config.journal;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
-            if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
-            if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
-            if ((journal as any) === undefined || (journal as any) === null) journal = false;
+                let writeconcern = this.config.writeconcern;
+                let journal = this.config.journal;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
+                if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
+                if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
+                if ((journal as any) === undefined || (journal as any) === null) journal = false;
 
-            let data: any[] = [];
+                let data: any[] = [];
 
-            let _data: any[];
-            if (this.config.entities == null && _data == null && this.config.inputfield != null) {
-                _data = msg[this.config.inputfield];
-            } else {
-                _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
-                if (_data as any == "payload") {
-                    _data = msg["payload"];
+                let _data: any[];
+                if (this.config.entities == null && _data == null && this.config.inputfield != null) {
+                    _data = msg[this.config.inputfield];
+                } else {
+                    _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
+                    if (_data as any == "payload") {
+                        _data = msg["payload"];
 
-                }
-            }
-
-            if (!Util.IsNullUndefinded(_data)) {
-                if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
-                if (data.length === 0) {
-                    this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
-                }
-            } else { this.node.warn("Input data is null"); }
-
-            this.node.status({ fill: "blue", shape: "dot", text: "processing " + data.length + " items" });
-            let Promises: Promise<any>[] = [];
-            let results: any[] = [];
-            for (let y: number = 0; y < data.length; y += 50) {
-                for (let i: number = y; i < (y + 50) && i < data.length; i++) {
-                    const element: any = data[i];
-                    if (!Util.IsNullEmpty(entitytype)) {
-                        element._type = entitytype;
                     }
-                    Promises.push(this.client.InsertOne({ collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }));
                 }
-                this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
-                results = results.concat(tempresults);
-                Promises = [];
-            }
-            data = results;
 
-            const errors = data.filter(result => Util.IsString(result) || (result instanceof Error));
-            if (errors.length > 0) {
-                for (let i: number = 0; i < errors.length; i++) {
-                    Util.HandleError(this, errors[i], msg);
+                if (!Util.IsNullUndefinded(_data)) {
+                    if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
+                    if (data.length === 0) {
+                        this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
+                    }
+                } else { this.node.warn("Input data is null"); }
+
+                this.node.status({ fill: "blue", shape: "dot", text: "processing " + data.length + " items" });
+                let Promises: Promise<any>[] = [];
+                let results: any[] = [];
+                for (let y: number = 0; y < data.length; y += 50) {
+                    for (let i: number = y; i < (y + 50) && i < data.length; i++) {
+                        const element: any = data[i];
+                        if (!Util.IsNullEmpty(entitytype)) {
+                            element._type = entitytype;
+                        }
+                        Promises.push(this.client.InsertOne({ collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }));
+                    }
+                    this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
+                    const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
+                    results = results.concat(tempresults);
+                    Promises = [];
                 }
-            }
-            data = data.filter(result => !Util.IsString(result) && !(result instanceof Error));
+                data = results;
 
-            if (this.config.entities == null && this.config.resultfield != null) {
-                Util.SetMessageProperty(msg, this.config.resultfield, data);
-            } else {
-                Util.SetMessageProperty(msg, this.config.entities, data);
+                const errors = data.filter(result => Util.IsString(result) || (result instanceof Error));
+                if (errors.length > 0) {
+                    for (let i: number = 0; i < errors.length; i++) {
+                        Util.HandleError(this, errors[i], msg);
+                    }
+                }
+                data = data.filter(result => !Util.IsString(result) && !(result instanceof Error));
+
+                if (this.config.entities == null && this.config.resultfield != null) {
+                    Util.SetMessageProperty(msg, this.config.resultfield, data);
+                } else {
+                    Util.SetMessageProperty(msg, this.config.entities, data);
+                }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -375,85 +361,80 @@ export class api_addmany {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api addmany", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
+                // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
 
-            let writeconcern = this.config.writeconcern;
-            let journal = this.config.journal;
-            let skipresults = this.config.skipresults;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
-            if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
-            if (!Util.IsNullEmpty(msg.skipresults)) { skipresults = msg.skipresults; }
-            if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
-            if ((journal as any) === undefined || (journal as any) === null) journal = false;
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
-            const entitytype = await Util.EvaluateNodeProperty<string>(this, msg, "entitytype");
+                let writeconcern = this.config.writeconcern;
+                let journal = this.config.journal;
+                let skipresults = this.config.skipresults;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
+                if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
+                if (!Util.IsNullEmpty(msg.skipresults)) { skipresults = msg.skipresults; }
+                if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
+                if ((journal as any) === undefined || (journal as any) === null) journal = false;
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                const entitytype = await Util.EvaluateNodeProperty<string>(this, msg, "entitytype");
 
-            let _data: any[];
-            if (this.config.entities == null && _data == null && this.config.inputfield != null) {
-                _data = msg[this.config.inputfield];
-            } else {
-                _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
-            }
-
-
-            // let entities: any[] = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
-            // if (this.config.entities == null && entities == null && this.config.inputfield != null) {
-            //     entities = msg[this.config.inputfield];
-            // }
-
-            let data: any[] = [];
-            if (!Util.IsNullUndefinded(_data)) {
-                if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
-                if (data.length === 0) {
-                    this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
+                let _data: any[];
+                if (this.config.entities == null && _data == null && this.config.inputfield != null) {
+                    _data = msg[this.config.inputfield];
+                } else {
+                    _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
                 }
-            } else { this.node.warn("Input data is null"); }
 
-            if (data.length > 0) {
-                this.node.status({ fill: "blue", shape: "dot", text: "processing " + data.length + " items" });
-                let results: any[] = [];
-                for (let y: number = 0; y < data.length; y += 50) {
-                    let subitems: any[] = [];
-                    for (let i: number = y; i < (y + 50) && i < data.length; i++) {
-                        const element: any = data[i];
-                        if (!Util.IsNullEmpty(entitytype)) {
-                            element._type = entitytype;
-                        }
-                        subitems.push(element);
+
+                // let entities: any[] = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
+                // if (this.config.entities == null && entities == null && this.config.inputfield != null) {
+                //     entities = msg[this.config.inputfield];
+                // }
+
+                let data: any[] = [];
+                if (!Util.IsNullUndefinded(_data)) {
+                    if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
+                    if (data.length === 0) {
+                        this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
                     }
-                    this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                    results = results.concat(await this.client.InsertMany({ collectionname, items: subitems, w: writeconcern, j: journal, skipresults, jwt: msg.jwt }));
-                }
-                data = results;
-            }
-            if (this.config.entities == null && this.config.resultfield != null) {
-                Util.SetMessageProperty(msg, this.config.resultfield, data);
-            } else {
-                Util.SetMessageProperty(msg, this.config.entities, data);
-            }
+                } else { this.node.warn("Input data is null"); }
 
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+                if (data.length > 0) {
+                    this.node.status({ fill: "blue", shape: "dot", text: "processing " + data.length + " items" });
+                    let results: any[] = [];
+                    for (let y: number = 0; y < data.length; y += 50) {
+                        let subitems: any[] = [];
+                        for (let i: number = y; i < (y + 50) && i < data.length; i++) {
+                            const element: any = data[i];
+                            if (!Util.IsNullEmpty(entitytype)) {
+                                element._type = entitytype;
+                            }
+                            subitems.push(element);
+                        }
+                        this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
+                        results = results.concat(await this.client.InsertMany({ collectionname, items: subitems, w: writeconcern, j: journal, skipresults, jwt: msg.jwt }));
+                    }
+                    data = results;
+                }
+                if (this.config.entities == null && this.config.resultfield != null) {
+                    Util.SetMessageProperty(msg, this.config.resultfield, data);
+                } else {
+                    Util.SetMessageProperty(msg, this.config.entities, data);
+                }
+
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
+            }
+        });
     }
     onclose() {
     }
@@ -488,100 +469,95 @@ export class api_update {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api update", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
 
-            const entitytype = await Util.EvaluateNodeProperty<string>(this, msg, "entitytype");
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                const entitytype = await Util.EvaluateNodeProperty<string>(this, msg, "entitytype");
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
 
-            let _data: any[];
-            if (this.config.entities == null && _data == null && this.config.inputfield != null) {
-                _data = msg[this.config.inputfield];
-            } else {
-                _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
-            }
-
-            let writeconcern = this.config.writeconcern;
-            let journal = this.config.journal;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
-            if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
-            if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
-            if ((journal as any) === undefined || (journal as any) === null) journal = false;
-
-            let data: any[] = [];
-            if (!Util.IsNullUndefinded(_data)) {
-                if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
-                if (data.length === 0) {
-                    this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
+                let _data: any[];
+                if (this.config.entities == null && _data == null && this.config.inputfield != null) {
+                    _data = msg[this.config.inputfield];
+                } else {
+                    _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
                 }
-            } else { this.node.warn("Input data is null"); }
 
-            this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
-            let Promises: Promise<any>[] = [];
-            let results: any[] = [];
-            // for (let y: number = 0; y < data.length; y += 50) {
-            //     for (let i: number = y; i < (y + 50) && i < data.length; i++) {
-            //         const element: any = data[i];
-            //         if (!Util.IsNullEmpty(entitytype)) {
-            //             element._type = entitytype;
-            //         }
-            //         Promises.push(NoderedUtil.UpdateOne({ collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }));
-            //     }
-            //     this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-            //     const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
-            //     results = results.concat(tempresults);
-            //     Promises = [];
-            // }
-            for (let y: number = 0; y < data.length; y += 50) {
-                let items = [];
-                for (let i: number = y; i < (y + 50) && i < data.length; i++) {
-                    const element: any = data[i];
-                    if (!Util.IsNullEmpty(entitytype)) {
-                        element._type = entitytype;
+                let writeconcern = this.config.writeconcern;
+                let journal = this.config.journal;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
+                if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
+                if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
+                if ((journal as any) === undefined || (journal as any) === null) journal = false;
+
+                let data: any[] = [];
+                if (!Util.IsNullUndefinded(_data)) {
+                    if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
+                    if (data.length === 0) {
+                        this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
                     }
-                    items.push(element);
+                } else { this.node.warn("Input data is null"); }
+
+                this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
+                let Promises: Promise<any>[] = [];
+                let results: any[] = [];
+                // for (let y: number = 0; y < data.length; y += 50) {
+                //     for (let i: number = y; i < (y + 50) && i < data.length; i++) {
+                //         const element: any = data[i];
+                //         if (!Util.IsNullEmpty(entitytype)) {
+                //             element._type = entitytype;
+                //         }
+                //         Promises.push(NoderedUtil.UpdateOne({ collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }));
+                //     }
+                //     this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
+                //     const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
+                //     results = results.concat(tempresults);
+                //     Promises = [];
+                // }
+                for (let y: number = 0; y < data.length; y += 50) {
+                    let items = [];
+                    for (let i: number = y; i < (y + 50) && i < data.length; i++) {
+                        const element: any = data[i];
+                        if (!Util.IsNullEmpty(entitytype)) {
+                            element._type = entitytype;
+                        }
+                        items.push(element);
+                    }
+                    this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
+                    var tempresults = await this.client.InsertOrUpdateMany({ collectionname, uniqeness: "_id", items, skipresults: false, j: journal, w: writeconcern, jwt: msg.jwt });
+                    results = results.concat(tempresults);
                 }
-                this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                var tempresults = await this.client.InsertOrUpdateMany({ collectionname, uniqeness: "_id", items, skipresults: false, j: journal, w: writeconcern, jwt: msg.jwt });
-                results = results.concat(tempresults);
-            }
 
-            data = results;
+                data = results;
 
 
-            const errors = data.filter(result => Util.IsString(result) || (result instanceof Error));
-            if (errors.length > 0) {
-                for (let i: number = 0; i < errors.length; i++) {
-                    Util.HandleError(this, errors[i], msg);
+                const errors = data.filter(result => Util.IsString(result) || (result instanceof Error));
+                if (errors.length > 0) {
+                    for (let i: number = 0; i < errors.length; i++) {
+                        Util.HandleError(this, errors[i], msg);
+                    }
+                    return;
                 }
-                return;
+                data = data.filter(result => !Util.IsString(result) && !(result instanceof Error));
+                if (this.config.entities == null && this.config.resultfield != null) {
+                    Util.SetMessageProperty(msg, this.config.resultfield, data);
+                } else {
+                    Util.SetMessageProperty(msg, this.config.entities, data);
+                }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            data = data.filter(result => !Util.IsString(result) && !(result instanceof Error));
-            if (this.config.entities == null && this.config.resultfield != null) {
-                Util.SetMessageProperty(msg, this.config.resultfield, data);
-            } else {
-                Util.SetMessageProperty(msg, this.config.entities, data);
-            }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -618,104 +594,99 @@ export class api_addorupdate {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
-            const entitytype = await Util.EvaluateNodeProperty<string>(this, msg, "entitytype");
-            const uniqeness = await Util.EvaluateNodeProperty<string>(this, msg, "uniqeness");
-            let _data: any[];
-            if (this.config.entities == null && _data == null && this.config.inputfield != null) {
-                _data = msg[this.config.inputfield];
-            } else {
-                _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
-            }
-
-            let writeconcern = this.config.writeconcern;
-            let journal = this.config.journal;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
-            if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
-            if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
-            if ((journal as any) === undefined || (journal as any) === null) journal = false;
-
-            let data: any[] = [];
-            if (!Util.IsNullUndefinded(_data)) {
-                if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
-                if (data.length === 0) {
-                    this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api addorupdate", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                const entitytype = await Util.EvaluateNodeProperty<string>(this, msg, "entitytype");
+                const uniqeness = await Util.EvaluateNodeProperty<string>(this, msg, "uniqeness");
+                let _data: any[];
+                if (this.config.entities == null && _data == null && this.config.inputfield != null) {
+                    _data = msg[this.config.inputfield];
+                } else {
+                    _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
                 }
-            } else { this.node.warn("Input data is null"); }
 
-            this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
-            let Promises: Promise<any>[] = [];
-            let results: any[] = [];
-            // for (let y: number = 0; y < data.length; y += 50) {
-            //     for (let i: number = y; i < (y + 50) && i < data.length; i++) {
-            //         const element: any = data[i];
-            //         if (!Util.IsNullEmpty(entitytype)) {
-            //             element._type = entitytype;
-            //         }
-            //         Promises.push(NoderedUtil.InsertOrUpdateOne({ collectionname, item: element, uniqeness, w: writeconcern, j: journal, jwt: msg.jwt, priority }));
-            //     }
-            //     this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-            //     const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
-            //     results = results.concat(tempresults);
-            //     Promises = [];
-            // }
-            // data = results;
-            let skipresults: boolean = false;
-            if (Util.IsNullEmpty(this.config.entities) && this.config.entitiestype == "msg") {
-                skipresults = true;
-            }
+                let writeconcern = this.config.writeconcern;
+                let journal = this.config.journal;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
+                if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
+                if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
+                if ((journal as any) === undefined || (journal as any) === null) journal = false;
 
-            for (let y: number = 0; y < data.length; y += 50) {
-                let items = [];
-                for (let i: number = y; i < (y + 50) && i < data.length; i++) {
-                    const element: any = data[i];
-                    if (!Util.IsNullEmpty(entitytype)) {
-                        element._type = entitytype;
+                let data: any[] = [];
+                if (!Util.IsNullUndefinded(_data)) {
+                    if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
+                    if (data.length === 0) {
+                        this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
                     }
-                    items.push(element);
-                }
-                this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                var tempresults = await this.client.InsertOrUpdateMany({ collectionname, uniqeness, items, skipresults, j: journal, w: writeconcern, jwt: msg.jwt })
-                results = results.concat(tempresults);
-            }
-            if (!skipresults) {
-                Util.SetMessageProperty(msg, this.config.entities, results);
-            }
+                } else { this.node.warn("Input data is null"); }
 
-            // const errors = data.filter(result => Util.IsString(result) || (result instanceof Error));
-            // if (errors.length > 0) {
-            //     for (let i: number = 0; i < errors.length; i++) {
-            //         Util.HandleError(this, errors[i], msg);
-            //     }
-            // }
-            // data = data.filter(result => !Util.IsString(result) && !(result instanceof Error));
-            // if (this.config.entities == null && this.config.resultfield != null) {
-            //     Util.SetMessageProperty(msg, this.config.resultfield, data);
-            // } else {
-            //     Util.SetMessageProperty(msg, this.config.entities, data);
-            // }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+                this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
+                let Promises: Promise<any>[] = [];
+                let results: any[] = [];
+                // for (let y: number = 0; y < data.length; y += 50) {
+                //     for (let i: number = y; i < (y + 50) && i < data.length; i++) {
+                //         const element: any = data[i];
+                //         if (!Util.IsNullEmpty(entitytype)) {
+                //             element._type = entitytype;
+                //         }
+                //         Promises.push(NoderedUtil.InsertOrUpdateOne({ collectionname, item: element, uniqeness, w: writeconcern, j: journal, jwt: msg.jwt, priority }));
+                //     }
+                //     this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
+                //     const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
+                //     results = results.concat(tempresults);
+                //     Promises = [];
+                // }
+                // data = results;
+                let skipresults: boolean = false;
+                if (Util.IsNullEmpty(this.config.entities) && this.config.entitiestype == "msg") {
+                    skipresults = true;
+                }
+
+                for (let y: number = 0; y < data.length; y += 50) {
+                    let items = [];
+                    for (let i: number = y; i < (y + 50) && i < data.length; i++) {
+                        const element: any = data[i];
+                        if (!Util.IsNullEmpty(entitytype)) {
+                            element._type = entitytype;
+                        }
+                        items.push(element);
+                    }
+                    this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
+                    var tempresults = await this.client.InsertOrUpdateMany({ collectionname, uniqeness, items, skipresults, j: journal, w: writeconcern, jwt: msg.jwt })
+                    results = results.concat(tempresults);
+                }
+                if (!skipresults) {
+                    Util.SetMessageProperty(msg, this.config.entities, results);
+                }
+
+                // const errors = data.filter(result => Util.IsString(result) || (result instanceof Error));
+                // if (errors.length > 0) {
+                //     for (let i: number = 0; i < errors.length; i++) {
+                //         Util.HandleError(this, errors[i], msg);
+                //     }
+                // }
+                // data = data.filter(result => !Util.IsString(result) && !(result instanceof Error));
+                // if (this.config.entities == null && this.config.resultfield != null) {
+                //     Util.SetMessageProperty(msg, this.config.resultfield, data);
+                // } else {
+                //     Util.SetMessageProperty(msg, this.config.entities, data);
+                // }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
+            }
+        });
     }
     onclose() {
     }
@@ -747,68 +718,63 @@ export class api_delete {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
-            let _data: any[];
-            if (this.config.entities == null && _data == null && this.config.inputfield != null) {
-                _data = msg[this.config.inputfield];
-            } else {
-                _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
-            }
-
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-
-            let data: any[] = [];
-            if (!Util.IsNullUndefinded(_data)) {
-                if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
-                if (data.length === 0) {
-                    this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api delete", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                let _data: any[];
+                if (this.config.entities == null && _data == null && this.config.inputfield != null) {
+                    _data = msg[this.config.inputfield];
+                } else {
+                    _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
                 }
-            } else { this.node.warn("Input data is null"); }
 
-            this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
-            let Promises: Promise<any>[] = [];
-            let results: any[] = [];
-            for (let y: number = 0; y < data.length; y += 50) {
-                for (let i: number = y; i < (y + 50) && i < data.length; i++) {
-                    const element: any = data[i];
-                    let id: string = element;
-                    if (Util.isObject(element)) { id = element._id; }
-                    Promises.push(this.client.DeleteOne({ collectionname, id, jwt: msg.jwt }));
-                }
-                this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
-                results = results.concat(tempresults);
-                Promises = [];
-            }
-            data = results;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            const errors = data.filter(result => Util.IsString(result) || (result instanceof Error));
-            if (errors.length > 0) {
-                for (let i: number = 0; i < errors.length; i++) {
-                    Util.HandleError(this, errors[i], msg);
+                let data: any[] = [];
+                if (!Util.IsNullUndefinded(_data)) {
+                    if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
+                    if (data.length === 0) {
+                        this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
+                    }
+                } else { this.node.warn("Input data is null"); }
+
+                this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
+                let Promises: Promise<any>[] = [];
+                let results: any[] = [];
+                for (let y: number = 0; y < data.length; y += 50) {
+                    for (let i: number = y; i < (y + 50) && i < data.length; i++) {
+                        const element: any = data[i];
+                        let id: string = element;
+                        if (Util.isObject(element)) { id = element._id; }
+                        Promises.push(this.client.DeleteOne({ collectionname, id, jwt: msg.jwt }));
+                    }
+                    this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
+                    const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
+                    results = results.concat(tempresults);
+                    Promises = [];
                 }
+                data = results;
+
+                const errors = data.filter(result => Util.IsString(result) || (result instanceof Error));
+                if (errors.length > 0) {
+                    for (let i: number = 0; i < errors.length; i++) {
+                        Util.HandleError(this, errors[i], msg);
+                    }
+                }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -840,55 +806,50 @@ export class api_deletemany {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api deletemany", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
-            let query = await Util.EvaluateNodeProperty<any[]>(this, msg, "query");
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                let query = await Util.EvaluateNodeProperty<any[]>(this, msg, "query");
 
 
-            let ids: string[] = null;
-            if (Array.isArray(query)) {
-                if(query.length == 0) {
-                    this.node.send(msg);
-                    this.node.status({ fill: "green", shape: "dot", text: "Empty array received" });
-                    return;        
+                let ids: string[] = null;
+                if (Array.isArray(query)) {
+                    if(query.length == 0) {
+                        this.node.send(msg);
+                        this.node.status({ fill: "green", shape: "dot", text: "Empty array received" });
+                        return;        
+                    }
+                    var _data: any[] = query;
+                    ids = [];
+                    for (let i: number = 0; i < _data.length; i++) {
+                        let id: string = _data[i];
+                        if (Util.isObject(_data[i])) { id = _data[i]._id; }
+                        ids.push(id);
+                    }
+                    query = null;
                 }
-                var _data: any[] = query;
-                ids = [];
-                for (let i: number = 0; i < _data.length; i++) {
-                    let id: string = _data[i];
-                    if (Util.isObject(_data[i])) { id = _data[i]._id; }
-                    ids.push(id);
+                if(ids && ids.length > 0) {
+                    query = {"_id": {"$in": ids}} as any
+                    // throw new Error("ID's no longer supportd, use query!")
                 }
-                query = null;
+                this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
+                const affectedrows = await this.client.DeleteMany({ collectionname, query, jwt: msg.jwt });
+                this.node.send(msg);
+                this.node.status({ fill: "green", shape: "dot", text: "deleted " + affectedrows + " rows" });
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            if(ids && ids.length > 0) {
-                query = {"_id": {"$in": ids}} as any
-                // throw new Error("ID's no longer supportd, use query!")
-            }
-            this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
-            const affectedrows = await this.client.DeleteMany({ collectionname, query, jwt: msg.jwt });
-            this.node.send(msg);
-            this.node.status({ fill: "green", shape: "dot", text: "deleted " + affectedrows + " rows" });
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -1029,54 +990,49 @@ export class api_updatedocument {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api updatedocument", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
 
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
-            let query = await Util.EvaluateNodeProperty<any>(this, msg, "query");
-            let updatedocument = await Util.EvaluateNodeProperty<any>(this, msg, "updatedocument");
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                let query = await Util.EvaluateNodeProperty<any>(this, msg, "query");
+                let updatedocument = await Util.EvaluateNodeProperty<any>(this, msg, "updatedocument");
 
-            let action = this.config.action;
-            let writeconcern = this.config.writeconcern;
-            let journal = this.config.journal;
-            const jwt = msg.jwt;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            if (!Util.IsNullEmpty(msg.action)) { action = msg.action; }
-            if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
-            if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
+                let action = this.config.action;
+                let writeconcern = this.config.writeconcern;
+                let journal = this.config.journal;
+                const jwt = msg.jwt;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                if (!Util.IsNullEmpty(msg.action)) { action = msg.action; }
+                if (!Util.IsNullEmpty(msg.writeconcern)) { writeconcern = msg.writeconcern; }
+                if (!Util.IsNullEmpty(msg.journal)) { journal = msg.journal; }
 
-            if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
-            if ((journal as any) === undefined || (journal as any) === null) journal = false;
+                if ((writeconcern as any) === undefined || (writeconcern as any) === null) writeconcern = 0;
+                if ((journal as any) === undefined || (journal as any) === null) journal = false;
 
-            if (!Util.IsNullEmpty(query) && Util.IsString(query)) {
-                query = JSON.parse(query);
+                if (!Util.IsNullEmpty(query) && Util.IsString(query)) {
+                    query = JSON.parse(query);
+                }
+                if (!Util.IsNullEmpty(updatedocument) && Util.IsString(updatedocument)) {
+                    updatedocument = JSON.parse(updatedocument);
+                }
+
+                this.node.status({ fill: "blue", shape: "dot", text: "Running Update Document" });
+                const q2 = await this.client.UpdateDocument({collectionname, document: updatedocument,query, w: writeconcern, j: journal, jwt: msg.jwt});
+                msg.payload = q2;
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            if (!Util.IsNullEmpty(updatedocument) && Util.IsString(updatedocument)) {
-                updatedocument = JSON.parse(updatedocument);
-            }
-
-            this.node.status({ fill: "blue", shape: "dot", text: "Running Update Document" });
-            const q2 = await this.client.UpdateDocument({collectionname, document: updatedocument,query, w: writeconcern, j: journal, jwt: msg.jwt});
-            msg.payload = q2;
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -1109,84 +1065,79 @@ export class grant_permission {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api grant permission", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
 
-            // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            let targetid: string = "";
-            if (this.config.targetid == "from msg.targetid" || Util.IsNullEmpty(this.config.targetid)) {
-                targetid = msg.targetid;
-            } else {
-                targetid = this.config.targetid;
-            }
-            if (Util.IsNullEmpty(targetid)) {
-                throw new Error("targetid is null or empty");
-            }
-            let bits = this.config.bits;
-            if (!Util.IsNullUndefinded(msg.bits)) { bits = msg.bits; }
-            if (Util.IsNullUndefinded(bits)) {
-                throw new Error("bits is null or empty");
-            }
-
-
-            if (!Array.isArray(this.config.bits)) {
-                this.config.bits = this.config.bits.split(',');
-            }
-            for (let i = 0; i < this.config.bits.length; i++) {
-                this.config.bits[i] = parseInt(this.config.bits[i]);
-            }
-
-            const result: any[] = await this.client.Query({ collectionname: 'users', query: { _id: targetid }, projection: { name: 1 }, orderby: { name: -1 }, top: 1, jwt: msg.jwt })
-            if (result.length === 0) { return Util.HandleError(this, "Target " + targetid + " not found ", msg); }
-            const found = result[0];
-
-            let data: any[] = [];
-            const _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
-            if (!Util.IsNullUndefinded(_data)) {
-                if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
-                if (data.length === 0) {
-                    this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
-                }
-            } else { this.node.warn("Input data is null"); }
-
-            this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
-            for (let i = 0; i < data.length; i++) {
-                if (Util.IsNullEmpty(data[i]._type) && !Util.IsNullUndefinded(data[i].metadata)) {
-                    const metadata: Base = (data[i].metadata as any);
-                    Base.addRight(metadata, targetid, found.name, this.config.bits);
-                    data[i].metadata = metadata;
+                let targetid: string = "";
+                if (this.config.targetid == "from msg.targetid" || Util.IsNullEmpty(this.config.targetid)) {
+                    targetid = msg.targetid;
                 } else {
-                    const entity: Base = data[i];
-                    Base.addRight(entity, targetid, found.name, this.config.bits);
-                    data[i] = entity;
+                    targetid = this.config.targetid;
                 }
-                if ((i % 50) == 0 && i > 0) {
-                    this.node.status({ fill: "blue", shape: "dot", text: "processed " + i + " of " + data.length });
-                    await Util.Delay(50);
+                if (Util.IsNullEmpty(targetid)) {
+                    throw new Error("targetid is null or empty");
                 }
+                let bits = this.config.bits;
+                if (!Util.IsNullUndefinded(msg.bits)) { bits = msg.bits; }
+                if (Util.IsNullUndefinded(bits)) {
+                    throw new Error("bits is null or empty");
+                }
+
+
+                if (!Array.isArray(this.config.bits)) {
+                    this.config.bits = this.config.bits.split(',');
+                }
+                for (let i = 0; i < this.config.bits.length; i++) {
+                    this.config.bits[i] = parseInt(this.config.bits[i]);
+                }
+
+                const result: any[] = await this.client.Query({ collectionname: 'users', query: { _id: targetid }, projection: { name: 1 }, orderby: { name: -1 }, top: 1, jwt: msg.jwt })
+                if (result.length === 0) { return Util.HandleError(this, "Target " + targetid + " not found ", msg); }
+                const found = result[0];
+
+                let data: any[] = [];
+                const _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
+                if (!Util.IsNullUndefinded(_data)) {
+                    if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
+                    if (data.length === 0) {
+                        this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
+                    }
+                } else { this.node.warn("Input data is null"); }
+
+                this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
+                for (let i = 0; i < data.length; i++) {
+                    if (Util.IsNullEmpty(data[i]._type) && !Util.IsNullUndefinded(data[i].metadata)) {
+                        const metadata: Base = (data[i].metadata as any);
+                        Base.addRight(metadata, targetid, found.name, this.config.bits);
+                        data[i].metadata = metadata;
+                    } else {
+                        const entity: Base = data[i];
+                        Base.addRight(entity, targetid, found.name, this.config.bits);
+                        data[i] = entity;
+                    }
+                    if ((i % 50) == 0 && i > 0) {
+                        this.node.status({ fill: "blue", shape: "dot", text: "processed " + i + " of " + data.length });
+                        await Util.Delay(50);
+                    }
+                }
+                Util.saveToObject(msg, this.config.entities, data);
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            Util.saveToObject(msg, this.config.entities, data);
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -1212,81 +1163,76 @@ export class revoke_permission {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api revoke permission", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
 
-            let targetid: string = "";
-            if (this.config.targetid == "from msg.targetid" || Util.IsNullEmpty(this.config.targetid)) {
-                targetid = msg.targetid;
-            } else {
-                targetid = this.config.targetid;
-            }
-            if (Util.IsNullEmpty(targetid)) {
-                throw new Error("targetid is null or empty");
-            }
-            let bits = this.config.bits;
-            if (!Util.IsNullUndefinded(msg.bits)) { bits = msg.bits; }
-            if (Util.IsNullUndefinded(bits)) {
-                throw new Error("bits is null or empty");
-            }
-
-
-
-            if (!Array.isArray(bits)) {
-                bits = bits.split(',');
-            }
-            for (let i = 0; i < bits.length; i++) {
-                bits[i] = parseInt(bits[i]);
-            }
-
-            let data: any[] = [];
-            const _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
-            if (!Util.IsNullUndefinded(_data)) {
-                if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
-                if (data.length === 0) {
-                    this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
-                }
-            } else { this.node.warn("Input data is null"); }
-
-            for (let i = 0; i < data.length; i++) {
-
-                if (Util.IsNullEmpty(data[i]._type) && !Util.IsNullUndefinded(data[i].metadata)) {
-                    const metadata: Base = data[i].metadata;
-                    if (bits.indexOf(-1) > -1) {
-                        metadata._acl = metadata._acl.filter((m: any) => { return m._id !== targetid; });
-                    } else {
-                        Base.removeRight(metadata, targetid, bits);
-                    }
-                    data[i].metadata = metadata;
+                let targetid: string = "";
+                if (this.config.targetid == "from msg.targetid" || Util.IsNullEmpty(this.config.targetid)) {
+                    targetid = msg.targetid;
                 } else {
-                    const entity: Base = data[i];
-                    if (bits.indexOf(-1) > -1) {
-                        entity._acl = entity._acl.filter((m: any) => { return m._id !== targetid; });
-                    } else {
-                        Base.removeRight(entity, targetid, bits);
-                    }
-                    data[i] = entity;
+                    targetid = this.config.targetid;
                 }
+                if (Util.IsNullEmpty(targetid)) {
+                    throw new Error("targetid is null or empty");
+                }
+                let bits = this.config.bits;
+                if (!Util.IsNullUndefinded(msg.bits)) { bits = msg.bits; }
+                if (Util.IsNullUndefinded(bits)) {
+                    throw new Error("bits is null or empty");
+                }
+
+
+
+                if (!Array.isArray(bits)) {
+                    bits = bits.split(',');
+                }
+                for (let i = 0; i < bits.length; i++) {
+                    bits[i] = parseInt(bits[i]);
+                }
+
+                let data: any[] = [];
+                const _data = await Util.EvaluateNodeProperty<any[]>(this, msg, "entities");
+                if (!Util.IsNullUndefinded(_data)) {
+                    if (!Array.isArray(_data)) { data.push(_data); } else { data = _data; }
+                    if (data.length === 0) {
+                        this.node.status({ fill: "yellow", shape: "dot", text: "input array is empty" });
+                    }
+                } else { this.node.warn("Input data is null"); }
+
+                for (let i = 0; i < data.length; i++) {
+
+                    if (Util.IsNullEmpty(data[i]._type) && !Util.IsNullUndefinded(data[i].metadata)) {
+                        const metadata: Base = data[i].metadata;
+                        if (bits.indexOf(-1) > -1) {
+                            metadata._acl = metadata._acl.filter((m: any) => { return m._id !== targetid; });
+                        } else {
+                            Base.removeRight(metadata, targetid, bits);
+                        }
+                        data[i].metadata = metadata;
+                    } else {
+                        const entity: Base = data[i];
+                        if (bits.indexOf(-1) > -1) {
+                            entity._acl = entity._acl.filter((m: any) => { return m._id !== targetid; });
+                        } else {
+                            Base.removeRight(entity, targetid, bits);
+                        }
+                        data[i] = entity;
+                    }
+                }
+                Util.saveToObject(msg, this.config.entities, data);
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            Util.saveToObject(msg, this.config.entities, data);
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -1316,52 +1262,47 @@ export class download_file {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api download file", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
 
-            const fileid = await Util.EvaluateNodeProperty<string>(this, msg, "fileid");
-            const filename = await Util.EvaluateNodeProperty<string>(this, msg, "filename", true);
-            let asbuffer: boolean = this.config.asbuffer;
-            if (Util.IsNullEmpty(asbuffer)) asbuffer = false;
-            asbuffer = Boolean(asbuffer);;
-            const jwt = msg.jwt;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                const fileid = await Util.EvaluateNodeProperty<string>(this, msg, "fileid");
+                const filename = await Util.EvaluateNodeProperty<string>(this, msg, "filename", true);
+                let asbuffer: boolean = this.config.asbuffer;
+                if (Util.IsNullEmpty(asbuffer)) asbuffer = false;
+                asbuffer = Boolean(asbuffer);;
+                const jwt = msg.jwt;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            this.node.status({ fill: "blue", shape: "dot", text: "Getting file" });
-            const file = await this.client.DownloadFile({ filename, id: fileid, jwt: msg.jwt });
-            var result = null;
-            result = fs.readFileSync(file.filename);
-            // if (asbuffer) {
-            //     var data = Buffer.from(file.file, 'base64');
-            //     result = pako.inflate(data);
-            //     result = Buffer.from(result);
-            // } else {
-            //     result = file.file;
-            // }
-            Util.SetMessageProperty(msg, this.config.result, result);
-            Util.SetMessageProperty(msg, this.config.filename, file.filename);
-            msg.id = file.id;
-            msg.mimeType = file.mimetype;
+                this.node.status({ fill: "blue", shape: "dot", text: "Getting file" });
+                const file = await this.client.DownloadFile({ filename, id: fileid, jwt: msg.jwt });
+                var result = null;
+                result = fs.readFileSync(file.filename);
+                // if (asbuffer) {
+                //     var data = Buffer.from(file.file, 'base64');
+                //     result = pako.inflate(data);
+                //     result = Buffer.from(result);
+                // } else {
+                //     result = file.file;
+                // }
+                Util.SetMessageProperty(msg, this.config.result, result);
+                Util.SetMessageProperty(msg, this.config.filename, file.filename);
+                msg.id = file.id;
+                msg.mimeType = file.mimetype;
 
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
+            }
+        });
     }
     onclose() {
     }
@@ -1390,45 +1331,40 @@ export class upload_file {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api upload file", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
 
-            const jwt = msg.jwt;
-            const filename = await Util.EvaluateNodeProperty<string>(this, msg, "filename");
-            const mimeType = await Util.EvaluateNodeProperty<string>(this, msg, "mimeType");
-            const filecontent = await Util.EvaluateNodeProperty<string>(this, msg, "content");
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                const jwt = msg.jwt;
+                const filename = await Util.EvaluateNodeProperty<string>(this, msg, "filename");
+                const mimeType = await Util.EvaluateNodeProperty<string>(this, msg, "mimeType");
+                const filecontent = await Util.EvaluateNodeProperty<string>(this, msg, "content");
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            this.node.status({ fill: "blue", shape: "dot", text: "Saving file" });
+                this.node.status({ fill: "blue", shape: "dot", text: "Saving file" });
 
-            var tempfilename = path.basename(filename);
-            if(fs.existsSync(tempfilename)) {
-                fs.unlinkSync(tempfilename);
+                var tempfilename = path.basename(filename);
+                if(fs.existsSync(tempfilename)) {
+                    fs.unlinkSync(tempfilename);
+                }
+                fs.writeFileSync(tempfilename,  filecontent)
+                const file = await this.client.UploadFile({filename:tempfilename, jwt: msg.jwt});
+                fs.unlinkSync (tempfilename);
+                Util.SetMessageProperty(msg, this.config.entity, file);
+
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            fs.writeFileSync(tempfilename,  filecontent)
-            const file = await this.client.UploadFile({filename:tempfilename, jwt: msg.jwt});
-            fs.unlinkSync (tempfilename);
-            Util.SetMessageProperty(msg, this.config.entity, file);
-
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -1462,37 +1398,32 @@ export class api_aggregate {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api update", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api aggregate", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
+                // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
 
-            const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
-            const aggregates = await Util.EvaluateNodeProperty<object[]>(this, msg, "aggregates");
+                const collectionname = await Util.EvaluateNodeProperty<string>(this, msg, "collection");
+                const aggregates = await Util.EvaluateNodeProperty<object[]>(this, msg, "aggregates");
 
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            this.node.status({ fill: "blue", shape: "dot", text: "Running aggregate" });
-            const result = await this.client.Aggregate({ collectionname, aggregates, jwt: msg.jwt });
-            msg.payload = result;
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+                this.node.status({ fill: "blue", shape: "dot", text: "Running aggregate" });
+                const result = await this.client.Aggregate({ collectionname, aggregates, jwt: msg.jwt });
+                msg.payload = result;
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
+            }
+        });
     }
     onclose() {
     }
@@ -1591,22 +1522,25 @@ export class list_collections {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        try {
-            this.node.status({});
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api list collections", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
 
-            // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                // if (Util.IsNullEmpty(msg.jwt)) { return Util.HandleError(this, "Missing jwt token"); }
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            const collections = await this.client.ListCollections({jwt: msg.jwt});
-            if (!Util.IsNullEmpty(this.config.results)) {
-                Util.saveToObject(msg, this.config.results, collections);
+                const collections = await this.client.ListCollections({jwt: msg.jwt});
+                if (!Util.IsNullEmpty(this.config.results)) {
+                    Util.saveToObject(msg, this.config.results, collections);
+                }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
             }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        }
+        });
     }
     onclose() {
     }
@@ -1634,17 +1568,20 @@ export class drop_collection {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        try {
-            this.node.status({});
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            const collectionname: any = await Util.EvaluateNodeProperty<string>(this, msg, "collectioname");
-            await this.client.DropCollection({ collectionname, jwt: msg.jwt });
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        }
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api drop collections", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                const collectionname: any = await Util.EvaluateNodeProperty<string>(this, msg, "collectioname");
+                await this.client.DropCollection({ collectionname, jwt: msg.jwt });
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                Util.HandleError(this, error, msg);
+            }
+        });
     }
     onclose() {
     }
@@ -1707,47 +1644,42 @@ export class memorydump {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("api get jwt", traceId, spanId);
-        let span = null;
-        try {
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api memorydump", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            const { nodered, openflow } = this.config;
+                const { nodered, openflow } = this.config;
 
-            if (nodered) {
-                this.node.status({ fill: "blue", shape: "dot", text: "Creating heap dump" });
-                // wait one second, to allow the status to be sent
-                await new Promise(resolve => { setTimeout(resolve, 1000) });
-                await this.createheapdump(msg.jwt, span);
+                if (nodered) {
+                    this.node.status({ fill: "blue", shape: "dot", text: "Creating heap dump" });
+                    // wait one second, to allow the status to be sent
+                    await new Promise(resolve => { setTimeout(resolve, 1000) });
+                    await this.createheapdump(msg.jwt, span);
 
+                }
+                if (openflow) {
+                    this.node.status({ fill: "blue", shape: "dot", text: "Running memory dump" });
+                    await this.client.CustomCommand({ command: "heapdump", jwt: msg.jwt });
+                }
+
+                this.node.send(msg);
+                if (!nodered) {
+                    this.node.status({ fill: "green", shape: "dot", text: "Complete" });
+                }
+            } catch (error) {
+                let message = error.message ? error.message : error;
+                // this.node.error(new Error(message), msg);
+                Util.HandleError(this, message, msg);
+                this.node.status({ fill: 'red', shape: 'dot' });
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-            if (openflow) {
-                this.node.status({ fill: "blue", shape: "dot", text: "Running memory dump" });
-                await this.client.CustomCommand({ command: "heapdump", jwt: msg.jwt });
-            }
-
-            this.node.send(msg);
-            if (!nodered) {
-                this.node.status({ fill: "green", shape: "dot", text: "Complete" });
-            }
-        } catch (error) {
-            let message = error.message ? error.message : error;
-            // this.node.error(new Error(message), msg);
-            Util.HandleError(this, message, msg);
-            this.node.status({ fill: 'red', shape: 'dot' });
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }
@@ -1821,27 +1753,30 @@ export class custom {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        try {
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api custom", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-            const command: any = await Util.EvaluateNodeProperty<string>(this, msg, "command");
-            const commandname: any = await Util.EvaluateNodeProperty<string>(this, msg, "commandname");
-            const commandid: any = await Util.EvaluateNodeProperty<string>(this, msg, "commandid");
+                const command: any = await Util.EvaluateNodeProperty<string>(this, msg, "command");
+                const commandname: any = await Util.EvaluateNodeProperty<string>(this, msg, "commandname");
+                const commandid: any = await Util.EvaluateNodeProperty<string>(this, msg, "commandid");
 
-            this.node.status({ fill: "blue", shape: "dot", text: "Send " + command });
-            var result = await this.client.CustomCommand({ command, data: msg.payload, id: commandid, name: commandname, jwt: msg.jwt });
+                this.node.status({ fill: "blue", shape: "dot", text: "Send " + command });
+                var result = await this.client.CustomCommand({ command, data: msg.payload, id: commandid, name: commandname, jwt: msg.jwt });
 
-            if (this.config.payload == null) {
-                Util.SetMessageProperty(msg, this.config.payload, result);
+                if (this.config.payload == null) {
+                    Util.SetMessageProperty(msg, this.config.payload, result);
+                }
+
+                msg.payload = result;
+                this.node.send(msg);
+                this.node.status({ fill: "green", shape: "dot", text: "Complete" });
+            } catch (error) {
+                Util.HandleError(this, error, msg);
             }
-
-            msg.payload = result;
-            this.node.send(msg);
-            this.node.status({ fill: "green", shape: "dot", text: "Complete" });
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        }
+        });
     }
     onclose() {
     }

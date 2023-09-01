@@ -1,9 +1,11 @@
-import { openiap, QueueEvent } from "@openiap/nodeapi";
+import { apiinstrumentation, openiap, QueueEvent } from "@openiap/nodeapi";
 import { config } from "@openiap/nodeapi";
 const { info, warn, err } = config;
 import * as RED from "node-red";
 import { Red } from "node-red";
 import { Util } from "./Util";
+import { context, trace } from '@opentelemetry/api';
+import { Logger } from "../Logger";
 
 export interface Iamqp_connection {
     name: string;
@@ -129,7 +131,13 @@ export class amqp_consumer_node {
     }
     async OnMessage(msg: QueueEvent, payload: any, user: any, jwt:string) {
         // var span = Logger.otel.startSpan("Consumer Node Received", data.traceId, data.spanId);
-        var span = null;
+        var t = trace.getSpan(context.active());
+        if(t != null) {
+            var ctx = t.spanContext();
+            console.log("OnMessage traceid" + ctx.traceId + " spanid: " + ctx.spanId);
+        }
+        // var log_messages = log_message.log_messages;
+        // let logmsg = log_messages[payload._msgid];
         try {
             if (this.config.autoack) {
                 if(!Util.IsNullEmpty(msg.replyto)) {
@@ -144,7 +152,6 @@ export class amqp_consumer_node {
         } catch (error) {
             Util.HandleError(this, error, null);
         } finally {
-            span?.end();
         }
     }
     async onclose(removed: boolean, done: any) {
@@ -243,8 +250,9 @@ export class amqp_publisher_node {
                     result = Object.assign(amqp_publisher_node.payloads[payload._msgid], payload);
                     delete amqp_publisher_node.payloads[payload._msgid];
                 }
-            }
-            result.payload = payload;
+            } else {
+                result = payload;
+            }            
             if(!Util.IsNullEmpty(jwt)) result.jwt = jwt;
             if(!Util.IsNullUndefinded(user)) result.user = user;
             if (payload.command == "timeout") {
@@ -260,55 +268,56 @@ export class amqp_publisher_node {
         }
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("Publish Node Send", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            if (!this.client.connected) {
-                throw new Error("Not connected to openflow");
-            }
-            if (!this.client.signedin) {
-                throw new Error("Not signed to openflow");
-            }            
-            if (this.localqueue == null || this.localqueue == "") {
-                throw new Error("Queue not registered yet");
-            }
-            const queuename = await Util.EvaluateNodeProperty<string>(this, msg, "queue");
-            const exchangename = await Util.EvaluateNodeProperty<string>(this, msg, "exchange");
-            const routingkey = await Util.EvaluateNodeProperty<string>(this, msg, "routingkey");
-
-            let striptoken = this.config.striptoken;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            if (!Util.IsNullEmpty(msg.striptoken)) { striptoken = msg.striptoken; }
-
-            const data: any = {};
-            // const [traceId, spanId] = Logger.otel.GetTraceSpanId(span);
-            data.payload = msg.payload;
-            data.jwt = msg.jwt;
-            data._id = msg._id;
-            data._msgid = msg._msgid;
-            const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 5000);
-            this.node.status({ fill: "blue", shape: "dot", text: "Sending message ..." });
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("Publisher Node Send", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
             try {
-                await this.client.QueueMessage({ correlationId: msg._msgid, exchangename, routingkey, queuename, replyto: this.localqueue, data, striptoken }, null);
-                amqp_publisher_node.payloads[msg._msgid] = msg;
+                var t = trace.getSpan(context.active());
+                if(t != null) {
+                    var ctx = t.spanContext();
+                    console.log("oninput traceid" + ctx.traceId + " spanid: " + ctx.spanId);
+                }
+        
+                this.node.status({});
+                if (!this.client.connected) {
+                    throw new Error("Not connected to openflow");
+                }
+                if (!this.client.signedin) {
+                    throw new Error("Not signed to openflow");
+                }            
+                if (this.localqueue == null || this.localqueue == "") {
+                    throw new Error("Queue not registered yet");
+                }
+                const queuename = await Util.EvaluateNodeProperty<string>(this, msg, "queue");
+                const exchangename = await Util.EvaluateNodeProperty<string>(this, msg, "exchange");
+                const routingkey = await Util.EvaluateNodeProperty<string>(this, msg, "routingkey");
+    
+                let striptoken = this.config.striptoken;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                if (!Util.IsNullEmpty(msg.striptoken)) { striptoken = msg.striptoken; }
+    
+                const data: any = {};
+                // const [traceId, spanId] = Logger.otel.GetTraceSpanId(span);
+                data.payload = msg.payload;
+                data.jwt = msg.jwt;
+                data._id = msg._id;
+                data._msgid = msg._msgid;
+                const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 5000);
+                this.node.status({ fill: "blue", shape: "dot", text: "Sending message ..." });
+                try {
+                    await this.client.QueueMessage({ expiration, correlationId: msg._msgid, exchangename, routingkey, queuename, replyto: this.localqueue, data, striptoken }, null);
+                    amqp_publisher_node.payloads[msg._msgid] = msg;
+                } catch (error) {
+                    data.error = error;
+                    this.node.send([null, data]);
+                }
+                this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
             } catch (error) {
-                data.error = error;
-                this.node.send([null, data]);
+                Util.HandleError(this, error, null);
+            } finally {
+                span?.end();
             }
-            this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
-        } catch (error) {
-            Util.HandleError(this, error, null);
-        } finally {
-            span?.end();
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         if (!Util.IsNullEmpty(this.localqueue)) {
@@ -337,33 +346,30 @@ export class amqp_acknowledgment_node {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("cknowledgment node", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            if (msg.amqpacknowledgment) {
-                const data: any = {};
-                data.payload = msg.payload;
-                data.jwt = msg.jwt;
-                data._msgid = msg._msgid;
-                await msg.amqpacknowledgment(data);
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        let traceId: string = logmsg?.traceId; let spanId: string = logmsg?.spanId;
+        apiinstrumentation.With("Acknowledgment node", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                this.node.status({});
+                if (msg.amqpacknowledgment) {
+                    const data: any = {};
+                    data.payload = msg.payload;
+                    data.jwt = msg.jwt;
+                    data._msgid = msg._msgid;
+                    console.log("acknowledging message " + msg._msgid + " traceId: " + traceId + " spanId: " + spanId);
+                    await msg.amqpacknowledgment(data);
+                }
+                this.node.send(msg);
+                this.node.status({});
+            } catch (error) {
+                err(error)
+            } finally {
+                span?.end();
+                if (logmsg != null) {
+                    Logger.log_message?.nodeend(msg._msgid, this.node.id);
+                }
             }
-            this.node.send(msg);
-            this.node.status({});
-        } catch (error) {
-            err(error)
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     onclose() {
     }

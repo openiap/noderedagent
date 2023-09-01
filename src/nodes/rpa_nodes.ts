@@ -1,9 +1,10 @@
-import { openiap, QueueEvent } from "@openiap/nodeapi";
+import { apiinstrumentation, openiap, QueueEvent } from "@openiap/nodeapi";
 import { config } from "@openiap/nodeapi";
 const { info, warn, err } = config;
 import * as RED from "node-red";
 import { Red } from "node-red";
 import { Util } from "./Util";
+import { Logger } from "../Logger";
 
 export interface Irpa_detector_node {
     queue: string;
@@ -225,80 +226,75 @@ export class rpa_workflow_node {
     }
     static messages: any[] = [];
     async oninput(msg: any) {
-        // let traceId: string; let spanId: string
-        // let logmsg = WebServer.log_messages[msg._msgid];
-        // if (logmsg != null) {
-        //     traceId = logmsg.traceId;
-        //     spanId = logmsg.spanId;
-        // }
-        // let span = Logger.otel.startSpan("rpa node", traceId, spanId);
-        let span = null;
-        try {
-            this.node.status({});
-            if (this.client == null || !this.client.signedin) {
-                throw new Error("Not connected to openflow");
-            }
-            if (Util.IsNullEmpty(this.localqueue)) {
-                throw new Error("Queue not registered yet");
-            }
-            let queue = this.config.queue;
-            let workflowid = this.config.workflow;
-            let killexisting = this.config.killexisting;
-            let killallexisting = this.config.killallexisting;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-            if (queue == "none") queue = "";
-            if (queue == "from msg.targetid") queue = "";
-            if (workflowid == "none") workflowid = "";
-            if (workflowid == "from msg.workflowid") workflowid = "";
-            if (Util.IsNullEmpty(queue) && !Util.IsNullEmpty(msg.targetid)) { queue = msg.targetid; }
-            if (Util.IsNullEmpty(workflowid) && !Util.IsNullEmpty(msg.workflowid)) { workflowid = msg.workflowid; }
-
-            if (!Util.IsNullEmpty(msg.killexisting)) { killexisting = msg.killexisting; }
-            if (!Util.IsNullEmpty(msg.killallexisting)) { killallexisting = msg.killallexisting; }
-
-            const correlationId = msg._msgid || Util.GetUniqueIdentifier();
-            rpa_workflow_node.messages[correlationId] = msg;
-            if (msg.payload == null || typeof msg.payload == "string" || typeof msg.payload == "number") {
-                msg.payload = { "data": msg.payload };
-            }
-            if (Util.IsNullEmpty(queue)) {
-                this.node.status({ fill: "red", shape: "dot", text: "robot is mandatory" });
-                return;
-            }
-            if (Util.IsNullEmpty(workflowid)) {
-                this.node.status({ fill: "red", shape: "dot", text: "workflow is mandatory" });
-                return;
-            }
-            const rpacommand = {
-                command: "invoke",
-                workflowid,
-                killexisting,
-                killallexisting,
-                jwt: msg.jwt,
-                _msgid: msg._msgid,
-                // Adding expiry to the rpacommand as a timestamp for when the RPA message is expected to timeout from the message queue
-                // Currently set to 20 seconds into the future
-                expiry: Math.floor((new Date().getTime()) / 1000) + 500,
-                data: { payload: msg.payload }
-            }
-            const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-            await this.client.QueueMessage({ expiration, queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: false, jwt: msg.jwt }, null);
-            this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
-        } catch (error) {
-            // Util.HandleError(this, error);
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api invoke rpa", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
             try {
-                this.node.status({ fill: "red", shape: "dot", text: error });
-                msg.error = error;
-                this.node.send([null, null, msg]);
+                this.node.status({});
+                if (this.client == null || !this.client.signedin) {
+                    throw new Error("Not connected to openflow");
+                }
+                if (Util.IsNullEmpty(this.localqueue)) {
+                    throw new Error("Queue not registered yet");
+                }
+                let queue = this.config.queue;
+                let workflowid = this.config.workflow;
+                let killexisting = this.config.killexisting;
+                let killallexisting = this.config.killallexisting;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                if (queue == "none") queue = "";
+                if (queue == "from msg.targetid") queue = "";
+                if (workflowid == "none") workflowid = "";
+                if (workflowid == "from msg.workflowid") workflowid = "";
+                if (Util.IsNullEmpty(queue) && !Util.IsNullEmpty(msg.targetid)) { queue = msg.targetid; }
+                if (Util.IsNullEmpty(workflowid) && !Util.IsNullEmpty(msg.workflowid)) { workflowid = msg.workflowid; }
+
+                if (!Util.IsNullEmpty(msg.killexisting)) { killexisting = msg.killexisting; }
+                if (!Util.IsNullEmpty(msg.killallexisting)) { killallexisting = msg.killallexisting; }
+
+                const correlationId = msg._msgid || Util.GetUniqueIdentifier();
+                rpa_workflow_node.messages[correlationId] = msg;
+                if (msg.payload == null || typeof msg.payload == "string" || typeof msg.payload == "number") {
+                    msg.payload = { "data": msg.payload };
+                }
+                if (Util.IsNullEmpty(queue)) {
+                    this.node.status({ fill: "red", shape: "dot", text: "robot is mandatory" });
+                    return;
+                }
+                if (Util.IsNullEmpty(workflowid)) {
+                    this.node.status({ fill: "red", shape: "dot", text: "workflow is mandatory" });
+                    return;
+                }
+                const rpacommand = {
+                    command: "invoke",
+                    workflowid,
+                    killexisting,
+                    killallexisting,
+                    jwt: msg.jwt,
+                    _msgid: msg._msgid,
+                    // Adding expiry to the rpacommand as a timestamp for when the RPA message is expected to timeout from the message queue
+                    // Currently set to 20 seconds into the future
+                    expiry: Math.floor((new Date().getTime()) / 1000) + 500,
+                    data: { payload: msg.payload }
+                }
+                const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
+                await this.client.QueueMessage({ expiration, queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: false, jwt: msg.jwt }, null);
+                this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
             } catch (error) {
+                // Util.HandleError(this, error);
+                try {
+                    this.node.status({ fill: "red", shape: "dot", text: error });
+                    msg.error = error;
+                    this.node.send([null, null, msg]);
+                } catch (error) {
+                }
+            } finally {
+                span?.end();
+                // if (logmsg != null) {
+                //     log_message.nodeend(msg._msgid, this.node.id);
+                // }
             }
-        } finally {
-            span?.end();
-            // if (logmsg != null) {
-            //     log_message.nodeend(msg._msgid, this.node.id);
-            // }
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         if (!Util.IsNullEmpty(this.localqueue)) {
@@ -415,49 +411,52 @@ export class rpa_killworkflows_node {
     }
     static messages: any[] = [];
     async oninput(msg: any) {
-        try {
-            this.node.status({});
-            if (this.client == null || !this.client.signedin) {
-                throw new Error("Not connected to openflow");
-            }
-            if (Util.IsNullEmpty(this.localqueue)) {
-                throw new Error("Queue not registered yet");
-            }
-            let queue = this.config.queue;
-
-            if (queue == "none") queue = "";
-            if (Util.IsNullEmpty(queue) && !Util.IsNullEmpty(msg.targetid)) { queue = msg.targetid; }
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-
-            const correlationId = msg._msgid || Util.GetUniqueIdentifier();
-            rpa_killworkflows_node.messages[correlationId] = msg;
-            // if (msg.payload == null || typeof msg.payload == "string" || typeof msg.payload == "number") {
-            //     msg.payload = { "data": msg.payload };
-            // }
-            if (Util.IsNullEmpty(queue)) {
-                this.node.status({ fill: "red", shape: "dot", text: "robot is mandatory" });
-                return;
-            }
-            const rpacommand = {
-                command: "killallworkflows",
-                jwt: msg.jwt,
-                // Adding expiry to the rpacommand as a timestamp for when the RPA message is expected to timeout from the message queue
-                // Currently set to 20 seconds into the future
-                expiry: Math.floor((new Date().getTime()) / 1000) + 500,
-                data: {}
-            }
-            const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-            await this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: true, jwt: msg.jwt }, null);
-            this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
-        } catch (error) {
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api kill workflows", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
             try {
-                this.node.status({ fill: "red", shape: "dot", text: error });
-                msg.error = error;
-                this.node.send([null, null, msg]);
+                this.node.status({});
+                if (this.client == null || !this.client.signedin) {
+                    throw new Error("Not connected to openflow");
+                }
+                if (Util.IsNullEmpty(this.localqueue)) {
+                    throw new Error("Queue not registered yet");
+                }
+                let queue = this.config.queue;
+
+                if (queue == "none") queue = "";
+                if (Util.IsNullEmpty(queue) && !Util.IsNullEmpty(msg.targetid)) { queue = msg.targetid; }
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+
+                const correlationId = msg._msgid || Util.GetUniqueIdentifier();
+                rpa_killworkflows_node.messages[correlationId] = msg;
+                // if (msg.payload == null || typeof msg.payload == "string" || typeof msg.payload == "number") {
+                //     msg.payload = { "data": msg.payload };
+                // }
+                if (Util.IsNullEmpty(queue)) {
+                    this.node.status({ fill: "red", shape: "dot", text: "robot is mandatory" });
+                    return;
+                }
+                const rpacommand = {
+                    command: "killallworkflows",
+                    jwt: msg.jwt,
+                    // Adding expiry to the rpacommand as a timestamp for when the RPA message is expected to timeout from the message queue
+                    // Currently set to 20 seconds into the future
+                    expiry: Math.floor((new Date().getTime()) / 1000) + 500,
+                    data: {}
+                }
+                const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
+                await this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: true, jwt: msg.jwt }, null);
+                this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
             } catch (error) {
+                try {
+                    this.node.status({ fill: "red", shape: "dot", text: error });
+                    msg.error = error;
+                    this.node.send([null, null, msg]);
+                } catch (error) {
+                }
             }
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         if (!Util.IsNullEmpty(this.localqueue)) {

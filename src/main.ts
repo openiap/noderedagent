@@ -12,6 +12,7 @@ import * as compression from "compression";
 import { nodered_settings } from "./nodered_settings";
 import { Util } from "./nodes/Util";
 import { middlewareauth } from "./middlewareauth";
+import { log_message } from "./instrumentation";
 let RED: nodered.Red = nodered;
 let server: http.Server = null;
 let app: express.Express = null;
@@ -58,9 +59,13 @@ async function main() {
   if(api_role == null || api_role == "") api_role = "";
 
   Util.client = client;
+  config.DoDumpToConsole = false;
+  config.doDumpMesssages = false;
+  config.doDumpRPCTraceIds = true;
   if (process.env.NODE_ENV != "production") {
-    config.DoDumpToConsole = true;
-    config.doDumpMesssages = true;
+    // config.DoDumpToConsole = true;
+    // config.doDumpMesssages = true;
+    // config.doDumpRPCTraceIds = true;
   }
   const settings = new nodered_settings();
   settings.functionGlobalContext.client = client;
@@ -167,6 +172,34 @@ async function main() {
       return Promise.resolve();
     }
   }
+  settings.logging.customLogger = {
+    level: 'debug',
+    metrics: true,
+    handler: function (settings) {
+      return function (msg) {
+        try {
+          if (!Util.IsNullEmpty(msg.msgid) && msg.event.startsWith("node.")) {
+            msg.event = msg.event.substring(5);
+            if (msg.event.endsWith(".receive")) {
+              log_message.nodestart(msg.msgid, msg.nodeid);
+            }
+            if (msg.event.endsWith(".send")) {
+              msg.event = msg.event.substring(0, msg.event.length - 5);
+              log_message.nodeend(msg.msgid, msg.nodeid);
+              log_message.nodestart(msg.msgid, msg.nodeid);
+            }
+            if (msg.event.endsWith(".done")) {
+              log_message.nodeend(msg.msgid, msg.nodeid);
+            }
+          }
+        } catch (error) {
+          console.trace(error);
+          console.error(error);
+        }
+      }
+    }
+  }
+
   if(api_role != "") {
     middlewareauth.api_role = api_role;
     // @ts-ignore

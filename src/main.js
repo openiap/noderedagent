@@ -50,6 +50,7 @@ var compression = require("compression");
 var nodered_settings_1 = require("./nodered_settings");
 var Util_1 = require("./nodes/Util");
 var middlewareauth_1 = require("./middlewareauth");
+var instrumentation_1 = require("./instrumentation");
 var RED = nodered;
 var server = null;
 var app = null;
@@ -104,9 +105,13 @@ function main() {
                     if (api_role == null || api_role == "")
                         api_role = "";
                     Util_1.Util.client = client;
+                    nodeapi_2.config.DoDumpToConsole = false;
+                    nodeapi_2.config.doDumpMesssages = false;
+                    nodeapi_2.config.doDumpRPCTraceIds = true;
                     if (process.env.NODE_ENV != "production") {
-                        nodeapi_2.config.DoDumpToConsole = true;
-                        nodeapi_2.config.doDumpMesssages = true;
+                        // config.DoDumpToConsole = true;
+                        // config.doDumpMesssages = true;
+                        // config.doDumpRPCTraceIds = true;
                     }
                     settings = new nodered_settings_1.nodered_settings();
                     settings.functionGlobalContext.client = client;
@@ -229,6 +234,34 @@ function main() {
                             if (res)
                                 return Promise.resolve(res);
                             return Promise.resolve();
+                        }
+                    };
+                    settings.logging.customLogger = {
+                        level: 'debug',
+                        metrics: true,
+                        handler: function (settings) {
+                            return function (msg) {
+                                try {
+                                    if (!Util_1.Util.IsNullEmpty(msg.msgid) && msg.event.startsWith("node.")) {
+                                        msg.event = msg.event.substring(5);
+                                        if (msg.event.endsWith(".receive")) {
+                                            instrumentation_1.log_message.nodestart(msg.msgid, msg.nodeid);
+                                        }
+                                        if (msg.event.endsWith(".send")) {
+                                            msg.event = msg.event.substring(0, msg.event.length - 5);
+                                            instrumentation_1.log_message.nodeend(msg.msgid, msg.nodeid);
+                                            instrumentation_1.log_message.nodestart(msg.msgid, msg.nodeid);
+                                        }
+                                        if (msg.event.endsWith(".done")) {
+                                            instrumentation_1.log_message.nodeend(msg.msgid, msg.nodeid);
+                                        }
+                                    }
+                                }
+                                catch (error) {
+                                    console.trace(error);
+                                    console.error(error);
+                                }
+                            };
                         }
                     };
                     if (api_role != "") {

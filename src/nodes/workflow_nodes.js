@@ -40,6 +40,7 @@ exports.assign_workflow_node = exports.get_workflows = exports.get_workflow_form
 var nodeapi_1 = require("@openiap/nodeapi");
 var RED = require("node-red");
 var Util_1 = require("./Util");
+var Logger_1 = require("../Logger");
 var workflow_in_node = /** @class */ (function () {
     function workflow_in_node(config) {
         this.config = config;
@@ -452,130 +453,139 @@ var workflow_out_node = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     workflow_out_node.prototype.oninput = function (msg, send, done) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var priority, msgcopy, msgcopy, error_4, data, expiration, error_5, data, error_6, error_7;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 16, 17, 18]);
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 6, , 7]);
-                        this.node.status({});
-                        msg.state = this.config.state;
-                        if (this.config.state != "from msg.form") {
-                            msg.form = this.config.form;
+            var logmsg;
+            var _this = this;
+            return __generator(this, function (_b) {
+                logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
+                nodeapi_1.apiinstrumentation.With("api workflow out", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
+                    var priority, msgcopy, msgcopy, error_4, data, expiration, error_5, data, error_6, error_7;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                _a.trys.push([0, 16, 17, 18]);
+                                _a.label = 1;
+                            case 1:
+                                _a.trys.push([1, 6, , 7]);
+                                this.node.status({});
+                                msg.state = this.config.state;
+                                if (this.config.state != "from msg.form") {
+                                    msg.form = this.config.form;
+                                }
+                                priority = 1;
+                                if (!Util_1.Util.IsNullEmpty(msg.priority)) {
+                                    priority = msg.priority;
+                                }
+                                if (!(msg._id !== null && msg._id !== undefined && msg._id !== "")) return [3 /*break*/, 5];
+                                if (!this.config.removestate) return [3 /*break*/, 3];
+                                msgcopy = {};
+                                msgcopy._id = msg._id;
+                                msgcopy.queue = msg.queue;
+                                msgcopy.name = msg.name;
+                                msgcopy.workflow = msg.workflow;
+                                msgcopy.targetid = msg.targetid;
+                                msgcopy.replyto = msg.replyto;
+                                msgcopy.correlationId = msg.correlationId;
+                                msgcopy.queuename = msg.queuename;
+                                msgcopy.consumerTag = msg.consumerTag;
+                                msgcopy.exchange = msg.exchange;
+                                msgcopy._msgid = msg._msgid;
+                                msgcopy.state = msg.state;
+                                msgcopy.form = msg.form;
+                                this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
+                                return [4 /*yield*/, this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt })];
+                            case 2:
+                                _a.sent();
+                                return [3 /*break*/, 5];
+                            case 3:
+                                msgcopy = Object.assign({}, msg);
+                                delete msgcopy.jwt;
+                                delete msgcopy.user;
+                                // Logger.instanse.info("Updating workflow instance with id " + msg._id + " (" + msg.name + " with state " + msg.state);
+                                this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
+                                return [4 /*yield*/, this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt })];
+                            case 4:
+                                _a.sent();
+                                _a.label = 5;
+                            case 5: return [3 /*break*/, 7];
+                            case 6:
+                                error_4 = _a.sent();
+                                Util_1.Util.HandleError(this, error_4, msg);
+                                return [3 /*break*/, 7];
+                            case 7:
+                                _a.trys.push([7, 10, , 11]);
+                                if (!(!Util_1.Util.IsNullEmpty(msg.resultqueue) && (msg.state == "completed" || msg.state == "failed"))) return [3 /*break*/, 9];
+                                data = {};
+                                data.state = msg.state;
+                                if (msg.error) {
+                                    data.error = "error";
+                                    if (msg.error.message) {
+                                        data.error = msg.error.message;
+                                    }
+                                }
+                                data._id = msg._id;
+                                data.payload = msg.payload;
+                                data.values = msg.values;
+                                data.jwt = msg.jwt;
+                                expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
+                                this.node.status({ fill: "blue", shape: "dot", text: "QueueMessage.1" });
+                                return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.resultqueue, data: data, correlationId: msg.correlationId, striptoken: false })];
+                            case 8:
+                                _a.sent();
+                                if (msg.resultqueue == msg._replyTo)
+                                    msg._replyTo = null; // don't double message (??)
+                                _a.label = 9;
+                            case 9: return [3 /*break*/, 11];
+                            case 10:
+                                error_5 = _a.sent();
+                                Util_1.Util.HandleError(this, error_5, msg);
+                                return [3 /*break*/, 11];
+                            case 11:
+                                _a.trys.push([11, 14, , 15]);
+                                if (!!Util_1.Util.IsNullEmpty(msg._replyTo)) return [3 /*break*/, 13];
+                                if (msg.payload === null || msg.payload === undefined) {
+                                    msg.payload = {};
+                                }
+                                data = {};
+                                data.state = msg.state;
+                                if (msg.error) {
+                                    data.error = "error";
+                                    if (msg.error.message) {
+                                        data.error = msg.error.message;
+                                    }
+                                }
+                                data._id = msg._id;
+                                data.payload = msg.payload;
+                                data.values = msg.values;
+                                data.jwt = msg.jwt;
+                                // ROLLBACK
+                                // Don't wait for ack(), we don't care if the receiver is there, right ?
+                                this.node.status({ fill: "blue", shape: "dot", text: "Queue message for " + msg._replyTo });
+                                return [4 /*yield*/, this.client.QueueMessage({ queuename: msg._replyTo, data: data, correlationId: msg.correlationId, striptoken: false })];
+                            case 12:
+                                _a.sent();
+                                _a.label = 13;
+                            case 13: return [3 /*break*/, 15];
+                            case 14:
+                                error_6 = _a.sent();
+                                Util_1.Util.HandleError(this, error_6, msg);
+                                return [3 /*break*/, 15];
+                            case 15:
+                                send(msg);
+                                done();
+                                this.node.status({});
+                                return [3 /*break*/, 18];
+                            case 16:
+                                error_7 = _a.sent();
+                                done(error_7);
+                                return [3 /*break*/, 18];
+                            case 17: return [7 /*endfinally*/];
+                            case 18: return [2 /*return*/];
                         }
-                        priority = 1;
-                        if (!Util_1.Util.IsNullEmpty(msg.priority)) {
-                            priority = msg.priority;
-                        }
-                        if (!(msg._id !== null && msg._id !== undefined && msg._id !== "")) return [3 /*break*/, 5];
-                        if (!this.config.removestate) return [3 /*break*/, 3];
-                        msgcopy = {};
-                        msgcopy._id = msg._id;
-                        msgcopy.queue = msg.queue;
-                        msgcopy.name = msg.name;
-                        msgcopy.workflow = msg.workflow;
-                        msgcopy.targetid = msg.targetid;
-                        msgcopy.replyto = msg.replyto;
-                        msgcopy.correlationId = msg.correlationId;
-                        msgcopy.queuename = msg.queuename;
-                        msgcopy.consumerTag = msg.consumerTag;
-                        msgcopy.exchange = msg.exchange;
-                        msgcopy._msgid = msg._msgid;
-                        msgcopy.state = msg.state;
-                        msgcopy.form = msg.form;
-                        this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
-                        return [4 /*yield*/, this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt })];
-                    case 2:
-                        _a.sent();
-                        return [3 /*break*/, 5];
-                    case 3:
-                        msgcopy = Object.assign({}, msg);
-                        delete msgcopy.jwt;
-                        delete msgcopy.user;
-                        // Logger.instanse.info("Updating workflow instance with id " + msg._id + " (" + msg.name + " with state " + msg.state);
-                        this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
-                        return [4 /*yield*/, this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt })];
-                    case 4:
-                        _a.sent();
-                        _a.label = 5;
-                    case 5: return [3 /*break*/, 7];
-                    case 6:
-                        error_4 = _a.sent();
-                        Util_1.Util.HandleError(this, error_4, msg);
-                        return [3 /*break*/, 7];
-                    case 7:
-                        _a.trys.push([7, 10, , 11]);
-                        if (!(!Util_1.Util.IsNullEmpty(msg.resultqueue) && (msg.state == "completed" || msg.state == "failed"))) return [3 /*break*/, 9];
-                        data = {};
-                        data.state = msg.state;
-                        if (msg.error) {
-                            data.error = "error";
-                            if (msg.error.message) {
-                                data.error = msg.error.message;
-                            }
-                        }
-                        data._id = msg._id;
-                        data.payload = msg.payload;
-                        data.values = msg.values;
-                        data.jwt = msg.jwt;
-                        expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-                        this.node.status({ fill: "blue", shape: "dot", text: "QueueMessage.1" });
-                        return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.resultqueue, data: data, correlationId: msg.correlationId, striptoken: false })];
-                    case 8:
-                        _a.sent();
-                        if (msg.resultqueue == msg._replyTo)
-                            msg._replyTo = null; // don't double message (??)
-                        _a.label = 9;
-                    case 9: return [3 /*break*/, 11];
-                    case 10:
-                        error_5 = _a.sent();
-                        Util_1.Util.HandleError(this, error_5, msg);
-                        return [3 /*break*/, 11];
-                    case 11:
-                        _a.trys.push([11, 14, , 15]);
-                        if (!!Util_1.Util.IsNullEmpty(msg._replyTo)) return [3 /*break*/, 13];
-                        if (msg.payload === null || msg.payload === undefined) {
-                            msg.payload = {};
-                        }
-                        data = {};
-                        data.state = msg.state;
-                        if (msg.error) {
-                            data.error = "error";
-                            if (msg.error.message) {
-                                data.error = msg.error.message;
-                            }
-                        }
-                        data._id = msg._id;
-                        data.payload = msg.payload;
-                        data.values = msg.values;
-                        data.jwt = msg.jwt;
-                        // ROLLBACK
-                        // Don't wait for ack(), we don't care if the receiver is there, right ?
-                        this.node.status({ fill: "blue", shape: "dot", text: "Queue message for " + msg._replyTo });
-                        return [4 /*yield*/, this.client.QueueMessage({ queuename: msg._replyTo, data: data, correlationId: msg.correlationId, striptoken: false })];
-                    case 12:
-                        _a.sent();
-                        _a.label = 13;
-                    case 13: return [3 /*break*/, 15];
-                    case 14:
-                        error_6 = _a.sent();
-                        Util_1.Util.HandleError(this, error_6, msg);
-                        return [3 /*break*/, 15];
-                    case 15:
-                        send(msg);
-                        done();
-                        this.node.status({});
-                        return [3 /*break*/, 18];
-                    case 16:
-                        error_7 = _a.sent();
-                        done(error_7);
-                        return [3 /*break*/, 18];
-                    case 17: return [7 /*endfinally*/];
-                    case 18: return [2 /*return*/];
-                }
+                    });
+                }); });
+                return [2 /*return*/];
             });
         });
     };
@@ -826,80 +836,89 @@ var assign_workflow_node = /** @class */ (function () {
         });
     };
     assign_workflow_node.prototype.oninput = function (msg) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var workflowid, targetid, initialrun, topic, priority, jwt, cloned, runnerinstance, who, size, res3, _a, error_12;
+            var logmsg;
+            var _this = this;
             return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 5, , 6]);
-                        this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
-                        workflowid = (!Util_1.Util.IsNullEmpty(this.config.workflowid) ? this.config.workflowid : msg.workflowid);
-                        targetid = (!Util_1.Util.IsNullEmpty(this.config.targetid) ? this.config.targetid : msg.targetid);
-                        return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "initialrun")];
-                    case 1:
-                        initialrun = _b.sent();
-                        return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "topic")];
-                    case 2:
-                        topic = _b.sent();
-                        if (Util_1.Util.IsNullEmpty(topic))
-                            topic = this.config.name;
-                        if (Util_1.Util.IsNullEmpty(topic))
-                            topic = msg.name;
-                        if (Util_1.Util.IsNullEmpty(topic))
-                            topic = this.config.queue;
-                        priority = 1;
-                        if (!Util_1.Util.IsNullEmpty(msg.priority)) {
-                            priority = msg.priority;
+                logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
+                nodeapi_1.apiinstrumentation.With("api assign workflow", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
+                    var workflowid, targetid, initialrun, topic, priority, jwt, cloned, runnerinstance, who, size, res3, _a, error_12;
+                    return __generator(this, function (_b) {
+                        switch (_b.label) {
+                            case 0:
+                                _b.trys.push([0, 5, , 6]);
+                                this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
+                                workflowid = (!Util_1.Util.IsNullEmpty(this.config.workflowid) ? this.config.workflowid : msg.workflowid);
+                                targetid = (!Util_1.Util.IsNullEmpty(this.config.targetid) ? this.config.targetid : msg.targetid);
+                                return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "initialrun")];
+                            case 1:
+                                initialrun = _b.sent();
+                                return [4 /*yield*/, Util_1.Util.EvaluateNodeProperty(this, msg, "topic")];
+                            case 2:
+                                topic = _b.sent();
+                                if (Util_1.Util.IsNullEmpty(topic))
+                                    topic = this.config.name;
+                                if (Util_1.Util.IsNullEmpty(topic))
+                                    topic = msg.name;
+                                if (Util_1.Util.IsNullEmpty(topic))
+                                    topic = this.config.queue;
+                                priority = 1;
+                                if (!Util_1.Util.IsNullEmpty(msg.priority)) {
+                                    priority = msg.priority;
+                                }
+                                if (Util_1.Util.IsNullEmpty(targetid)) {
+                                    this.node.status({ fill: "red", shape: "dot", text: "targetid is mandatory" });
+                                    return [2 /*return*/];
+                                }
+                                if (Util_1.Util.IsNullEmpty(workflowid)) {
+                                    this.node.status({ fill: "red", shape: "dot", text: "workflowid is mandatory" });
+                                    return [2 /*return*/];
+                                }
+                                jwt = msg.jwt;
+                                if (Util_1.Util.IsNullEmpty(jwt)) {
+                                    jwt = this.client.client.jwt;
+                                }
+                                cloned = Object.assign({}, msg);
+                                runnerinstance = new nodeapi_1.Base();
+                                runnerinstance._type = "instance";
+                                runnerinstance.name = "runner: " + topic;
+                                runnerinstance.queue = this.localqueue;
+                                runnerinstance.state = "idle";
+                                runnerinstance.msg = cloned;
+                                runnerinstance.jwt = msg.jwt;
+                                who = this.client.client.user;
+                                nodeapi_1.Base.addRight(runnerinstance, who._id, who.name, [-1]);
+                                size = JSON.stringify(runnerinstance).length * 2;
+                                if (size > (512 * 1024)) {
+                                    throw new Error("msg object is over 512KB in size, please clean up the msg object before using Assign");
+                                }
+                                return [4 /*yield*/, this.client.InsertOne({ collectionname: "workflow_instances", item: runnerinstance, jwt: jwt })];
+                            case 3:
+                                res3 = _b.sent();
+                                msg._parentid = res3._id;
+                                try {
+                                    msg.payload._parentid = res3._id;
+                                }
+                                catch (error) {
+                                    msg.payload = { data: msg.payload, _parentid: res3._id };
+                                }
+                                _a = msg;
+                                return [4 /*yield*/, this.client.CreateWorkflowInstance({ targetid: targetid, workflowid: workflowid, name: topic, resultqueue: this.localqueue, data: msg.payload, initialrun: initialrun, jwt: jwt })];
+                            case 4:
+                                _a.newinstanceid = _b.sent();
+                                this.node.send(msg);
+                                this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
+                                return [3 /*break*/, 6];
+                            case 5:
+                                error_12 = _b.sent();
+                                Util_1.Util.HandleError(this, error_12, msg);
+                                return [3 /*break*/, 6];
+                            case 6: return [2 /*return*/];
                         }
-                        if (Util_1.Util.IsNullEmpty(targetid)) {
-                            this.node.status({ fill: "red", shape: "dot", text: "targetid is mandatory" });
-                            return [2 /*return*/];
-                        }
-                        if (Util_1.Util.IsNullEmpty(workflowid)) {
-                            this.node.status({ fill: "red", shape: "dot", text: "workflowid is mandatory" });
-                            return [2 /*return*/];
-                        }
-                        jwt = msg.jwt;
-                        if (Util_1.Util.IsNullEmpty(jwt)) {
-                            jwt = this.client.client.jwt;
-                        }
-                        cloned = Object.assign({}, msg);
-                        runnerinstance = new nodeapi_1.Base();
-                        runnerinstance._type = "instance";
-                        runnerinstance.name = "runner: " + topic;
-                        runnerinstance.queue = this.localqueue;
-                        runnerinstance.state = "idle";
-                        runnerinstance.msg = cloned;
-                        runnerinstance.jwt = msg.jwt;
-                        who = this.client.client.user;
-                        nodeapi_1.Base.addRight(runnerinstance, who._id, who.name, [-1]);
-                        size = JSON.stringify(runnerinstance).length * 2;
-                        if (size > (512 * 1024)) {
-                            throw new Error("msg object is over 512KB in size, please clean up the msg object before using Assign");
-                        }
-                        return [4 /*yield*/, this.client.InsertOne({ collectionname: "workflow_instances", item: runnerinstance, jwt: jwt })];
-                    case 3:
-                        res3 = _b.sent();
-                        msg._parentid = res3._id;
-                        try {
-                            msg.payload._parentid = res3._id;
-                        }
-                        catch (error) {
-                            msg.payload = { data: msg.payload, _parentid: res3._id };
-                        }
-                        _a = msg;
-                        return [4 /*yield*/, this.client.CreateWorkflowInstance({ targetid: targetid, workflowid: workflowid, name: topic, resultqueue: this.localqueue, data: msg.payload, initialrun: initialrun, jwt: jwt })];
-                    case 4:
-                        _a.newinstanceid = _b.sent();
-                        this.node.send(msg);
-                        this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
-                        return [3 /*break*/, 6];
-                    case 5:
-                        error_12 = _b.sent();
-                        Util_1.Util.HandleError(this, error_12, msg);
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
-                }
+                    });
+                }); });
+                return [2 /*return*/];
             });
         });
     };

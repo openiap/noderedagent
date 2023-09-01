@@ -1,7 +1,8 @@
-import { Base, openiap, QueueEvent } from "@openiap/nodeapi";
+import { apiinstrumentation, Base, openiap, QueueEvent } from "@openiap/nodeapi";
 import * as RED from "node-red";
 import { Red } from "node-red";
 import { Util } from "./Util";
+import { Logger } from "../Logger";
 
 export interface Iworkflow_in_node {
     queue: string;
@@ -365,101 +366,104 @@ export class workflow_out_node {
         this.node.on("close", this.onclose);
     }
     async oninput(msg: any, send: any, done: any) {
-        try {
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api workflow out", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
             try {
+                try {
+                    this.node.status({});
+                    msg.state = this.config.state;
+                    if (this.config.state != "from msg.form") {
+                        msg.form = this.config.form;
+                    }
+                    let priority: number = 1;
+                    if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+                    if (msg._id !== null && msg._id !== undefined && msg._id !== "") {
+                        if (this.config.removestate) {
+                            let msgcopy: any = {};
+                            msgcopy._id = msg._id;
+                            msgcopy.queue = msg.queue;
+                            msgcopy.name = msg.name;
+                            msgcopy.workflow = msg.workflow;
+                            msgcopy.targetid = msg.targetid;
+                            msgcopy.replyto = msg.replyto;
+                            msgcopy.correlationId = msg.correlationId;
+                            msgcopy.queuename = msg.queuename;
+                            msgcopy.consumerTag = msg.consumerTag;
+                            msgcopy.exchange = msg.exchange;
+                            msgcopy._msgid = msg._msgid;
+                            msgcopy.state = msg.state;
+                            msgcopy.form = msg.form;
+                            this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
+                            await this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt });
+                        } else {
+                            let msgcopy = Object.assign({}, msg);
+                            delete msgcopy.jwt;
+                            delete msgcopy.user;
+                            // Logger.instanse.info("Updating workflow instance with id " + msg._id + " (" + msg.name + " with state " + msg.state);
+                            this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
+                            await this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt });
+                        }
+                    }
+                } catch (error) {
+                    Util.HandleError(this, error, msg);
+                }
+                try {
+                    if (!Util.IsNullEmpty(msg.resultqueue) && (msg.state == "completed" || msg.state == "failed")) {
+                        const data: any = {};
+                        data.state = msg.state;
+                        if (msg.error) {
+                            data.error = "error";
+                            if (msg.error.message) {
+                                data.error = msg.error.message;
+                            }
+                        }
+                        data._id = msg._id;
+                        data.payload = msg.payload;
+                        data.values = msg.values;
+                        data.jwt = msg.jwt;
+                        const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
+                        this.node.status({ fill: "blue", shape: "dot", text: "QueueMessage.1" });
+                        await this.client.QueueMessage({ queuename: msg.resultqueue, data, correlationId: msg.correlationId, striptoken: false });
+
+                        if (msg.resultqueue == msg._replyTo) msg._replyTo = null; // don't double message (??)
+
+                    }
+                } catch (error) {
+                    Util.HandleError(this, error, msg);
+                }
+                try {
+                    // if (!Util.IsNullEmpty(msg._replyTo) && Util.IsNullEmpty(msg.resultqueue)) {
+                    if (!Util.IsNullEmpty(msg._replyTo)) {
+                        if (msg.payload === null || msg.payload === undefined) { msg.payload = {}; }
+                        const data: any = {};
+                        data.state = msg.state;
+                        if (msg.error) {
+                            data.error = "error";
+                            if (msg.error.message) {
+                                data.error = msg.error.message;
+                            }
+                        }
+                        data._id = msg._id;
+                        data.payload = msg.payload;
+                        data.values = msg.values;
+                        data.jwt = msg.jwt;
+                        // ROLLBACK
+                        // Don't wait for ack(), we don't care if the receiver is there, right ?
+                        this.node.status({ fill: "blue", shape: "dot", text: "Queue message for " + msg._replyTo });
+                        await this.client.QueueMessage({ queuename: msg._replyTo, data, correlationId: msg.correlationId, striptoken: false });
+                    }
+                } catch (error) {
+                    Util.HandleError(this, error, msg);
+                }
+                send(msg);
+                done();
                 this.node.status({});
-                msg.state = this.config.state;
-                if (this.config.state != "from msg.form") {
-                    msg.form = this.config.form;
-                }
-                let priority: number = 1;
-                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-                if (msg._id !== null && msg._id !== undefined && msg._id !== "") {
-                    if (this.config.removestate) {
-                        let msgcopy: any = {};
-                        msgcopy._id = msg._id;
-                        msgcopy.queue = msg.queue;
-                        msgcopy.name = msg.name;
-                        msgcopy.workflow = msg.workflow;
-                        msgcopy.targetid = msg.targetid;
-                        msgcopy.replyto = msg.replyto;
-                        msgcopy.correlationId = msg.correlationId;
-                        msgcopy.queuename = msg.queuename;
-                        msgcopy.consumerTag = msg.consumerTag;
-                        msgcopy.exchange = msg.exchange;
-                        msgcopy._msgid = msg._msgid;
-                        msgcopy.state = msg.state;
-                        msgcopy.form = msg.form;
-                        this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
-                        await this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt });
-                    } else {
-                        let msgcopy = Object.assign({}, msg);
-                        delete msgcopy.jwt;
-                        delete msgcopy.user;
-                        // Logger.instanse.info("Updating workflow instance with id " + msg._id + " (" + msg.name + " with state " + msg.state);
-                        this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
-                        await this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt });
-                    }
-                }
             } catch (error) {
-                Util.HandleError(this, error, msg);
+                done(error);
             }
-            try {
-                if (!Util.IsNullEmpty(msg.resultqueue) && (msg.state == "completed" || msg.state == "failed")) {
-                    const data: any = {};
-                    data.state = msg.state;
-                    if (msg.error) {
-                        data.error = "error";
-                        if (msg.error.message) {
-                            data.error = msg.error.message;
-                        }
-                    }
-                    data._id = msg._id;
-                    data.payload = msg.payload;
-                    data.values = msg.values;
-                    data.jwt = msg.jwt;
-                    const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-                    this.node.status({ fill: "blue", shape: "dot", text: "QueueMessage.1" });
-                    await this.client.QueueMessage({ queuename: msg.resultqueue, data, correlationId: msg.correlationId, striptoken: false });
-
-                    if (msg.resultqueue == msg._replyTo) msg._replyTo = null; // don't double message (??)
-
-                }
-            } catch (error) {
-                Util.HandleError(this, error, msg);
+            finally {
             }
-            try {
-                // if (!Util.IsNullEmpty(msg._replyTo) && Util.IsNullEmpty(msg.resultqueue)) {
-                if (!Util.IsNullEmpty(msg._replyTo)) {
-                    if (msg.payload === null || msg.payload === undefined) { msg.payload = {}; }
-                    const data: any = {};
-                    data.state = msg.state;
-                    if (msg.error) {
-                        data.error = "error";
-                        if (msg.error.message) {
-                            data.error = msg.error.message;
-                        }
-                    }
-                    data._id = msg._id;
-                    data.payload = msg.payload;
-                    data.values = msg.values;
-                    data.jwt = msg.jwt;
-                    // ROLLBACK
-                    // Don't wait for ack(), we don't care if the receiver is there, right ?
-                    this.node.status({ fill: "blue", shape: "dot", text: "Queue message for " + msg._replyTo });
-                    await this.client.QueueMessage({ queuename: msg._replyTo, data, correlationId: msg.correlationId, striptoken: false });
-                }
-            } catch (error) {
-                Util.HandleError(this, error, msg);
-            }
-            send(msg);
-            done();
-            this.node.status({});
-        } catch (error) {
-            done(error);
-        }
-        finally {
-        }
+        });
     }
     onclose() {
     }
@@ -652,65 +656,68 @@ export class assign_workflow_node {
         }
     }
     async oninput(msg: any) {
-        try {
-            this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
-            const workflowid = (!Util.IsNullEmpty(this.config.workflowid) ? this.config.workflowid : msg.workflowid);
-            const targetid = (!Util.IsNullEmpty(this.config.targetid) ? this.config.targetid : msg.targetid);
-            const initialrun = await Util.EvaluateNodeProperty<boolean>(this, msg, "initialrun");
-            let topic = await Util.EvaluateNodeProperty<string>(this, msg, "topic");
-
-
-            if (Util.IsNullEmpty(topic)) topic = this.config.name;
-            if (Util.IsNullEmpty(topic)) topic = msg.name;
-            if (Util.IsNullEmpty(topic)) topic = this.config.queue;
-            let priority: number = 1;
-            if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
-
-            if (Util.IsNullEmpty(targetid)) {
-                this.node.status({ fill: "red", shape: "dot", text: "targetid is mandatory" });
-                return;
-            }
-            if (Util.IsNullEmpty(workflowid)) {
-                this.node.status({ fill: "red", shape: "dot", text: "workflowid is mandatory" });
-                return;
-            }
-            let jwt = msg.jwt;
-            if (Util.IsNullEmpty(jwt)) {
-                jwt = this.client.client.jwt;
-            }
-
-
-            // msg.jwt = (await NoderedUtil.RenewToken({ jwt, longtoken: true })).jwt;
-            let cloned = Object.assign({}, msg);
-
-            const runnerinstance = new Base();
-            runnerinstance._type = "instance";
-            runnerinstance.name = "runner: " + topic;
-            (runnerinstance as any).queue = this.localqueue;
-            (runnerinstance as any).state = "idle";
-            (runnerinstance as any).msg = cloned;
-            (runnerinstance as any).jwt = msg.jwt;
-            const who = this.client.client.user;
-            Base.addRight(runnerinstance, who._id, who.name, [-1]);
-
-            const size = JSON.stringify(runnerinstance).length * 2; // 2B per character
-            if (size > (512 * 1024)) {
-                throw new Error("msg object is over 512KB in size, please clean up the msg object before using Assign");
-            }
-
-            const res3 = await this.client.InsertOne<Base>({ collectionname: "workflow_instances", item: runnerinstance, jwt });
-            msg._parentid = res3._id;
+        let logmsg = Logger.log_message?.log_messages[msg._msgid];
+        apiinstrumentation.With("api assign workflow", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
             try {
-                msg.payload._parentid = res3._id;
+                this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
+                const workflowid = (!Util.IsNullEmpty(this.config.workflowid) ? this.config.workflowid : msg.workflowid);
+                const targetid = (!Util.IsNullEmpty(this.config.targetid) ? this.config.targetid : msg.targetid);
+                const initialrun = await Util.EvaluateNodeProperty<boolean>(this, msg, "initialrun");
+                let topic = await Util.EvaluateNodeProperty<string>(this, msg, "topic");
+
+
+                if (Util.IsNullEmpty(topic)) topic = this.config.name;
+                if (Util.IsNullEmpty(topic)) topic = msg.name;
+                if (Util.IsNullEmpty(topic)) topic = this.config.queue;
+                let priority: number = 1;
+                if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
+
+                if (Util.IsNullEmpty(targetid)) {
+                    this.node.status({ fill: "red", shape: "dot", text: "targetid is mandatory" });
+                    return;
+                }
+                if (Util.IsNullEmpty(workflowid)) {
+                    this.node.status({ fill: "red", shape: "dot", text: "workflowid is mandatory" });
+                    return;
+                }
+                let jwt = msg.jwt;
+                if (Util.IsNullEmpty(jwt)) {
+                    jwt = this.client.client.jwt;
+                }
+
+
+                // msg.jwt = (await NoderedUtil.RenewToken({ jwt, longtoken: true })).jwt;
+                let cloned = Object.assign({}, msg);
+
+                const runnerinstance = new Base();
+                runnerinstance._type = "instance";
+                runnerinstance.name = "runner: " + topic;
+                (runnerinstance as any).queue = this.localqueue;
+                (runnerinstance as any).state = "idle";
+                (runnerinstance as any).msg = cloned;
+                (runnerinstance as any).jwt = msg.jwt;
+                const who = this.client.client.user;
+                Base.addRight(runnerinstance, who._id, who.name, [-1]);
+
+                const size = JSON.stringify(runnerinstance).length * 2; // 2B per character
+                if (size > (512 * 1024)) {
+                    throw new Error("msg object is over 512KB in size, please clean up the msg object before using Assign");
+                }
+
+                const res3 = await this.client.InsertOne<Base>({ collectionname: "workflow_instances", item: runnerinstance, jwt });
+                msg._parentid = res3._id;
+                try {
+                    msg.payload._parentid = res3._id;
+                } catch (error) {
+                    msg.payload = { data: msg.payload, _parentid: res3._id }
+                }
+                msg.newinstanceid = await this.client.CreateWorkflowInstance({ targetid, workflowid, name: topic, resultqueue: this.localqueue, data: msg.payload, initialrun, jwt });
+                this.node.send(msg);
+                this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
             } catch (error) {
-                msg.payload = { data: msg.payload, _parentid: res3._id }
+                Util.HandleError(this, error, msg);
             }
-            msg.newinstanceid = await this.client.CreateWorkflowInstance({ targetid, workflowid, name: topic, resultqueue: this.localqueue, data: msg.payload, initialrun, jwt });
-            this.node.send(msg);
-            this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
-        } catch (error) {
-            Util.HandleError(this, error, msg);
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         // if (!Util.IsNullEmpty(this.localqueue) && removed) {
