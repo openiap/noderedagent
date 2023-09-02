@@ -1,14 +1,14 @@
 import { Context, HrTime, Span, TraceFlags } from "@opentelemetry/api";
 export class Logger {
-    public static instrumentation: iinstrumentation;
-    public static log_message: ilog_message;
+    public static instrumentation: iinstrumentation = null;
+    public static log_message: ilog_message = null;
     public static init() {
         let _instrumentation_require: any = null;
         try {
             _instrumentation_require = require("./instrumentation");
         } catch (error) {
         }
-        if (_instrumentation_require != null) {
+        if (_instrumentation_require != null && Logger.instrumentation == null) {
             Logger.instrumentation = _instrumentation_require.instrumentation;
             Logger.log_message = _instrumentation_require.log_message;
             Logger.instrumentation.init();

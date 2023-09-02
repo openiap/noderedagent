@@ -51,6 +51,12 @@ var nodered_settings_1 = require("./nodered_settings");
 var Util_1 = require("./nodes/Util");
 var middlewareauth_1 = require("./middlewareauth");
 var instrumentation_1 = require("./instrumentation");
+var Logger_1 = require("./Logger");
+try {
+    Logger_1.Logger.init();
+}
+catch (error) {
+}
 var RED = nodered;
 var server = null;
 var app = null;
@@ -138,12 +144,21 @@ function main() {
                     session = require('express-session');
                     app.use(session({ secret: "supersecret", cookie: { maxAge: 60000 } }));
                     server = http.createServer(app);
+                    // app.use(passport.initialize());
+                    // app.use(passport.session());
+                    // var well_known_url = process.env.oidc_config || "https://app.openiap.io/oidc/.well-known/openid-configuration";
+                    console.log("*********************************");
                     domain = process.env.domain || "localhost.openiap.io";
                     protocol = process.env.protocol || "http";
                     externalport = process.env.externalport || "";
+                    console.log("port: " + process.env.port + " externalport: " + process.env.externalport);
+                    if (process.env.port == null && process.env.externalport == null) {
+                        externalport = "3000";
+                    }
                     if (externalport != "") {
                         domain = domain + ":" + externalport;
                     }
+                    console.log("*********************************");
                     well_known = {
                         userinfo_endpoint: process.env.oidc_userinfo_endpoint,
                         issuer: process.env.oidc_issuer,

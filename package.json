@@ -1,6 +1,6 @@
 {
     "name": "@openiap/noderedagent",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "description": "",
     "main": "./src/main.js",
     "types": "./src/main.d.ts",
@@ -35,11 +35,12 @@
     },
     "dependencies": {
         "@nodemailer/mailparser2": "^1.0.3",
-        "@openiap/nodeapi": "^0.0.20",
+        "@openiap/nodeapi": "^0.0.21",
         "@opentelemetry/api": "^1.4.1",
         "@opentelemetry/auto-instrumentations-node": "^0.39.2",
         "@opentelemetry/context-async-hooks": "^1.15.2",
         "@opentelemetry/exporter-metrics-otlp-grpc": "^0.41.2",
+        "@opentelemetry/host-metrics": "^0.33.1",
         "@opentelemetry/sdk-metrics": "^1.15.2",
         "@opentelemetry/sdk-node": "^0.41.2",
         "@opentelemetry/sdk-trace-web": "^1.15.2",

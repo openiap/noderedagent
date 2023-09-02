@@ -13,6 +13,13 @@ import { nodered_settings } from "./nodered_settings";
 import { Util } from "./nodes/Util";
 import { middlewareauth } from "./middlewareauth";
 import { log_message } from "./instrumentation";
+import { Logger } from "./Logger";
+try {
+  Logger.init();  
+} catch (error) {
+  
+}
+
 let RED: nodered.Red = nodered;
 let server: http.Server = null;
 let app: express.Express = null;
@@ -97,12 +104,18 @@ async function main() {
 
   // var well_known_url = process.env.oidc_config || "https://app.openiap.io/oidc/.well-known/openid-configuration";
 
+  console.log("*********************************")
   var domain = process.env.domain || "localhost.openiap.io";
   var protocol = process.env.protocol || "http";
   var externalport = process.env.externalport || "";
+  console.log("port: " + process.env.port + " externalport: " + process.env.externalport)
+  if(process.env.port == null && process.env.externalport == null) {
+    externalport = "3000";
+  }
   if (externalport != "") {
     domain = domain + ":" + externalport
   }
+  console.log("*********************************")
 
   var well_known = {
     userinfo_endpoint: process.env.oidc_userinfo_endpoint,
