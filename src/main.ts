@@ -12,7 +12,6 @@ import * as compression from "compression";
 import { nodered_settings } from "./nodered_settings";
 import { Util } from "./nodes/Util";
 import { middlewareauth } from "./middlewareauth";
-import { log_message } from "./instrumentation";
 import { Logger } from "./Logger";
 try {
   Logger.init();  
@@ -194,15 +193,15 @@ async function main() {
           if (!Util.IsNullEmpty(msg.msgid) && msg.event.startsWith("node.")) {
             msg.event = msg.event.substring(5);
             if (msg.event.endsWith(".receive")) {
-              log_message.nodestart(msg.msgid, msg.nodeid);
+              Logger.log_message?.nodestart(msg.msgid, msg.nodeid);
             }
             if (msg.event.endsWith(".send")) {
               msg.event = msg.event.substring(0, msg.event.length - 5);
-              log_message.nodeend(msg.msgid, msg.nodeid);
-              log_message.nodestart(msg.msgid, msg.nodeid);
+              Logger.log_message?.nodeend(msg.msgid, msg.nodeid);
+              Logger.log_message?.nodestart(msg.msgid, msg.nodeid);
             }
             if (msg.event.endsWith(".done")) {
-              log_message.nodeend(msg.msgid, msg.nodeid);
+              Logger.log_message?.nodeend(msg.msgid, msg.nodeid);
             }
           }
         } catch (error) {
