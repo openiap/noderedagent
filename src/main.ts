@@ -60,6 +60,7 @@ async function main() {
   const client = new openiap();
   client.agent = "nodered";
   client.version = require("../package.json").version;
+  client.setMaxListeners(1000);
   var api_role = process.env.api_role;
   var credential_cache_seconds:number = process.env.credential_cache_seconds as any;
   if(api_role == null || api_role == "") api_role = "";

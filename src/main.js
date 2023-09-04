@@ -50,7 +50,6 @@ var compression = require("compression");
 var nodered_settings_1 = require("./nodered_settings");
 var Util_1 = require("./nodes/Util");
 var middlewareauth_1 = require("./middlewareauth");
-var instrumentation_1 = require("./instrumentation");
 var Logger_1 = require("./Logger");
 try {
     Logger_1.Logger.init();
@@ -106,6 +105,7 @@ function main() {
                     client = new nodeapi_1.openiap();
                     client.agent = "nodered";
                     client.version = require("../package.json").version;
+                    client.setMaxListeners(1000);
                     api_role = process.env.api_role;
                     credential_cache_seconds = process.env.credential_cache_seconds;
                     if (api_role == null || api_role == "")
@@ -256,19 +256,20 @@ function main() {
                         metrics: true,
                         handler: function (settings) {
                             return function (msg) {
+                                var _a, _b, _c, _d;
                                 try {
                                     if (!Util_1.Util.IsNullEmpty(msg.msgid) && msg.event.startsWith("node.")) {
                                         msg.event = msg.event.substring(5);
                                         if (msg.event.endsWith(".receive")) {
-                                            instrumentation_1.log_message.nodestart(msg.msgid, msg.nodeid);
+                                            (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.nodestart(msg.msgid, msg.nodeid);
                                         }
                                         if (msg.event.endsWith(".send")) {
                                             msg.event = msg.event.substring(0, msg.event.length - 5);
-                                            instrumentation_1.log_message.nodeend(msg.msgid, msg.nodeid);
-                                            instrumentation_1.log_message.nodestart(msg.msgid, msg.nodeid);
+                                            (_b = Logger_1.Logger.log_message) === null || _b === void 0 ? void 0 : _b.nodeend(msg.msgid, msg.nodeid);
+                                            (_c = Logger_1.Logger.log_message) === null || _c === void 0 ? void 0 : _c.nodestart(msg.msgid, msg.nodeid);
                                         }
                                         if (msg.event.endsWith(".done")) {
-                                            instrumentation_1.log_message.nodeend(msg.msgid, msg.nodeid);
+                                            (_d = Logger_1.Logger.log_message) === null || _d === void 0 ? void 0 : _d.nodeend(msg.msgid, msg.nodeid);
                                         }
                                     }
                                 }
