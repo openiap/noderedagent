@@ -44,6 +44,7 @@
         "google-auth-library": "^8.7.0",
         "node-red": "^3.0.2",
         "passport-openidconnect": "^0.1.1",
+        "pidusage": "^3.0.2",
         "request": "^2.88.2",
         "smtp-server": "^3.11.0"
     },
