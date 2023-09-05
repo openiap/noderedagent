@@ -135,6 +135,10 @@ function main() {
                     }
                     app = express();
                     app.disable("x-powered-by");
+                    app.use(function (req, res, next) {
+                        console.log(req.method + " " + req.url);
+                        next();
+                    });
                     app.use(compression());
                     app.use(express.urlencoded({ limit: '10mb', extended: true }));
                     app.use(express.json({ limit: '10mb' }));
@@ -234,7 +238,6 @@ function main() {
                             });
                         }
                     };
-                    // useAuthorizationHeaderForToken
                     settings.adminAuth = {
                         type: "strategy",
                         strategy: {
@@ -289,9 +292,12 @@ function main() {
                             middlewareauth_1.middlewareauth.process(client, req, res, next);
                         };
                     }
-                    settings.adminAuth.strategy.autoLogin = true;
+                    if (settings.adminAuth != null && settings.adminAuth.strategy != null)
+                        settings.adminAuth.strategy.autoLogin = true;
+                    // settings.adminAuth.strategy.autoLogin = false;
                     return [4 /*yield*/, RED.init(server, settings)];
                 case 4:
+                    // settings.adminAuth.strategy.autoLogin = false;
                     _a.sent();
                     app.use(settings.httpAdminRoot, RED.httpAdmin);
                     app.use(settings.httpNodeRoot, RED.httpNode);

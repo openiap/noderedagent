@@ -65,11 +65,15 @@ export class addworkitem {
                 const payload = await Util.EvaluateNodeProperty<any>(this, msg, "payload");
                 const files = await Util.EvaluateNodeProperty<WorkitemFile[]>(this, msg, "files");
                 const topic = await Util.EvaluateNodeProperty<string>(this, msg, "topic");
-                const nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
+                const _nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
                 const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
                 const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
                 const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
                 const { wiq, wiqid } = this.workitemqueue_config;
+                let nextrun:Date = undefined;
+                if (_nextrun != null && typeof _nextrun === 'string' || _nextrun instanceof String) {
+                    nextrun = new Date(_nextrun);
+                }
 
                 if (!Util.IsNullUndefinded(files)) {
                     for (var i = 0; i < files.length; i++) {
@@ -142,12 +146,17 @@ export class addworkitems {
             try {
                 this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
                 const items = await Util.EvaluateNodeProperty<Workitem[]>(this, msg, "workitems");
-                const nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
+                const _nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
                 const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
                 const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
                 const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
                 const { wiq, wiqid } = this.workitemqueue_config;
                 if (!Array.isArray(items)) throw new Error("workitems must be an array of Workitems")
+                let nextrun:Date = undefined;
+                if (_nextrun != null && typeof _nextrun === 'string' || _nextrun instanceof String) {
+                    nextrun = new Date(_nextrun);
+                }
+
                 items.forEach(item => {
                     if (!Util.IsNullEmpty(nextrun)) item.nextrun = nextrun;
                     if (!Util.IsNullEmpty(wipriority)) item.priority = wipriority;
@@ -222,20 +231,17 @@ export class updateworkitem {
                 const workitem = await Util.EvaluateNodeProperty<Workitem>(this, msg, "workitem");
                 const files = await Util.EvaluateNodeProperty<WorkitemFile[]>(this, msg, "files");
                 const state: any = await Util.EvaluateNodeProperty<string>(this, msg, "state");
+                const _nextrun = await Util.EvaluateNodeProperty<Date>(this, msg, "nextrun");
                 const wipriority = await Util.EvaluateNodeProperty<number>(this, msg, "priority");
                 const _errormessage = await Util.EvaluateNodeProperty<string>(this, msg, "error");
                 const ignoremaxretries = await Util.EvaluateNodeProperty<boolean>(this, msg, "ignoremaxretries");
                 const success_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "success_wiq");
                 const failed_wiq = await Util.EvaluateNodeProperty<string>(this, msg, "failed_wiq");
-                var nextrun = undefined;
-                try {
-                    const _nextrun = await Util.EvaluateNodeProperty<string>(this, msg, "nextrun");
-                    if(!Util.IsNullEmpty(_nextrun)) nextrun = new Date(_nextrun);
-                } catch (error) {
-                    nextrun = undefined
+
+                let nextrun:Date = undefined;
+                if (_nextrun != null && typeof _nextrun === 'string' || _nextrun instanceof String) {
+                    nextrun = new Date(_nextrun);
                 }
-                
-                var errorsource: string = "";
 
                 if (!Util.IsNullEmpty(msg.error) && (Util.IsNullUndefinded(workitem) || Util.IsNullEmpty(workitem._id))) {
                     this.node.status({ fill: "blue", shape: "dot", text: "Ignore missing workitem" });
