@@ -59,6 +59,7 @@ async function get(url, authorization = null): Promise<string> {
 async function main() {
   const client = new openiap();
   client.agent = "nodered";
+  client.allowconnectgiveup = false;
   client.version = require("../package.json").version;
   client.setMaxListeners(1000);
   var api_role = process.env.api_role;
@@ -88,10 +89,10 @@ async function main() {
   }
   app = express();
   app.disable("x-powered-by");
-  app.use(function (req, res, next) {
-    console.log(req.method + " " + req.url);
-    next();
-  });
+  // app.use(function (req, res, next) {
+  //   console.log(req.method + " " + req.url);
+  //   next();
+  // });
   app.use(compression());
   app.use(express.urlencoded({ limit: '10mb', extended: true }))
   app.use(express.json({ limit: '10mb' }))
