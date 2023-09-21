@@ -223,6 +223,10 @@ var amqp_consumer_node = /** @class */ (function () {
                         }); };
                         _a.label = 5;
                     case 5:
+                        if (!Util_1.Util.IsNullEmpty(jwt))
+                            payload.jwt = jwt;
+                        if (!Util_1.Util.IsNullUndefinded(user))
+                            payload.user = user;
                         this.node.send(payload);
                         return [3 /*break*/, 8];
                     case 6:

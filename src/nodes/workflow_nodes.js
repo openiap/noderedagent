@@ -350,6 +350,10 @@ var workflow_in_node = /** @class */ (function () {
                         //     WebServer.log_messages[data._msgid].traceId = data.payload.traceId;
                         //     WebServer.log_messages[data._msgid].spanId = data.payload.spanId;
                         // }
+                        if (!Util_1.Util.IsNullEmpty(jwt))
+                            data.jwt = jwt;
+                        if (!Util_1.Util.IsNullUndefinded(user))
+                            data.user = user;
                         this.node.send(data);
                         // this.node.send(result);
                         this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
@@ -361,7 +365,10 @@ var workflow_in_node = /** @class */ (function () {
                             data = {};
                             data.error = error_2;
                             data.payload = msg.data;
-                            data.jwt = jwt;
+                            if (!Util_1.Util.IsNullEmpty(jwt))
+                                data.jwt = jwt;
+                            if (!Util_1.Util.IsNullUndefinded(user))
+                                data.user = user;
                             if (data.payload === null || data.payload === undefined) {
                                 data.payload = {};
                             }

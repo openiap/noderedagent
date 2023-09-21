@@ -288,6 +288,8 @@ export class workflow_in_node {
             //     WebServer.log_messages[data._msgid].traceId = data.payload.traceId;
             //     WebServer.log_messages[data._msgid].spanId = data.payload.spanId;
             // }
+            if(!Util.IsNullEmpty(jwt)) data.jwt = jwt;
+            if(!Util.IsNullUndefinded(user)) data.user = user;
             this.node.send(data);
             // this.node.send(result);
             this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
@@ -299,7 +301,8 @@ export class workflow_in_node {
                 const data: any = {};
                 data.error = error;
                 data.payload = msg.data;
-                data.jwt = jwt;
+                if(!Util.IsNullEmpty(jwt)) data.jwt = jwt;
+                if(!Util.IsNullUndefinded(user)) data.user = user;
                 if (data.payload === null || data.payload === undefined) {
                     data.payload = {};
                 }

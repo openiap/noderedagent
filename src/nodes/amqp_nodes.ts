@@ -148,6 +148,8 @@ export class amqp_consumer_node {
                     await this.client.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data, jwt: jwt}, null)
                 }
             }
+            if(!Util.IsNullEmpty(jwt)) payload.jwt = jwt;
+            if(!Util.IsNullUndefinded(user)) payload.user = user;
             this.node.send(payload);
         } catch (error) {
             Util.HandleError(this, error, null);
