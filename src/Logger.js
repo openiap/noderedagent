@@ -14,7 +14,6 @@ var Logger = /** @class */ (function () {
         if (_instrumentation_require != null && Logger.instrumentation == null) {
             Logger.instrumentation = _instrumentation_require.instrumentation;
             Logger.log_message = _instrumentation_require.log_message;
-            Logger.instrumentation.init();
         }
         else {
         }

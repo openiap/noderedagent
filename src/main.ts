@@ -1,5 +1,5 @@
 import { openiap_storage, noderednpmrc } from "./openiap_storage";
-import { openiap } from "@openiap/nodeapi"
+import { User, openiap } from "@openiap/nodeapi"
 import { config } from "@openiap/nodeapi";
 const { info, warn, err } = config;
 import * as path from "path";
@@ -56,8 +56,12 @@ async function get(url, authorization = null): Promise<string> {
     });
   })
 }
+function onSignedIn(client: openiap, user: User) {
+  Logger.instrumentation?.init(client);
+}
 async function main() {
   const client = new openiap();
+  client.on('signedin', onSignedIn);
   client.agent = "nodered";
   client.allowconnectgiveup = false;
   client.version = require("../package.json").version;

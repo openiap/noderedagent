@@ -96,6 +96,10 @@ function get(url, authorization) {
         });
     });
 }
+function onSignedIn(client, user) {
+    var _a;
+    (_a = Logger_1.Logger.instrumentation) === null || _a === void 0 ? void 0 : _a.init(client);
+}
 function main() {
     return __awaiter(this, void 0, void 0, function () {
         var client, api_role, credential_cache_seconds, settings, user, session, domain, protocol, externalport, well_known, json, admin_role, oidc_client_id, oidc_client_secret, options;
@@ -103,6 +107,7 @@ function main() {
             switch (_a.label) {
                 case 0:
                     client = new nodeapi_1.openiap();
+                    client.on('signedin', onSignedIn);
                     client.agent = "nodered";
                     client.allowconnectgiveup = false;
                     client.version = require("../package.json").version;
