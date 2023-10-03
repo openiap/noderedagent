@@ -102,7 +102,7 @@ function onSignedIn(client, user) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var client, api_role, credential_cache_seconds, settings, user, session, domain, protocol, externalport, well_known, json, admin_role, oidc_client_id, oidc_client_secret, options;
+        var client, api_role, credential_cache_seconds, settings, user, session, domain, protocol, externalport, well_known, json, admin_role, read_role, oidc_client_id, oidc_client_secret, options;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -189,6 +189,7 @@ function main() {
                     _a.label = 3;
                 case 3:
                     admin_role = process.env.admin_role || "users";
+                    read_role = process.env.read_role || "";
                     oidc_client_id = process.env.oidc_client_id || "agent";
                     oidc_client_secret = process.env.oidc_client_secret || "";
                     options = {
@@ -215,7 +216,7 @@ function main() {
                                         case 1:
                                             user = _b.apply(_a, [_c.sent()]);
                                             Util_1.Util.Users.push(user);
-                                            user.permissions = "read";
+                                            // user.permissions = "read"
                                             if (!user.username && user.name)
                                                 user.username = user.name;
                                             if (user.roles) {
@@ -233,7 +234,12 @@ function main() {
                                                         user.permissions = "*";
                                                     if (role == admin_role || role.name == admin_role)
                                                         user.permissions = "*";
+                                                    if (role == read_role || role.name == read_role)
+                                                        user.permissions = "read";
                                                 }
+                                            }
+                                            if (user.permissions != "*" && user.permissions != "read") {
+                                                return [2 /*return*/, done(new Error('Unauthorized'), false)];
                                             }
                                             _c.label = 2;
                                         case 2:

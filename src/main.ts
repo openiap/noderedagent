@@ -142,6 +142,7 @@ async function main() {
     }    
   }
   const admin_role = process.env.admin_role || "users";
+  const read_role = process.env.read_role || "";
   const oidc_client_id = process.env.oidc_client_id || "agent";
   const oidc_client_secret = process.env.oidc_client_secret || "";
   const options = {
@@ -160,7 +161,7 @@ async function main() {
       if(user == null) {
         user = JSON.parse(await get(well_known.userinfo_endpoint, "Bearer " + accessToken));
         Util.Users.push(user)
-        user.permissions = "read"
+        // user.permissions = "read"
         if(!user.username && user.name) user.username = user.name;
         if (user.roles) {
           for (var i = 0; i < user.roles.length; i++) {
@@ -171,7 +172,12 @@ async function main() {
             if (role == settings.storageModule.nodered_id + "admins" || (role as any).name == settings.storageModule.nodered_id + "admins") user.permissions = "*"
             if (role == settings.storageModule.nodered_id + " admins" || (role as any).name == settings.storageModule.nodered_id + " admins") user.permissions = "*"
             if (role == admin_role || (role as any).name == admin_role) user.permissions = "*"
+            if (role == read_role || (role as any).name == read_role) user.permissions = "read"
+            
           }
+        }
+        if(user.permissions != "*" && user.permissions != "read") {
+          return done(new Error('Unauthorized'), false);
         }
       }
       done(null, {"username": user.name})
