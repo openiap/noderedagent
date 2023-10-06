@@ -377,8 +377,9 @@ var updateworkitem = /** @class */ (function () {
                                 if (!Util_1.Util.IsNullEmpty(this.config.state)) {
                                     workitem_1.state = this.config.state;
                                 }
-                                if (wipriority > 0 && workitem_1.priority == 0) {
-                                    workitem_1.priority = wipriority;
+                                if (wipriority > 0) {
+                                    workitem_1.priority = parseInt(wipriority);
+                                    // workitem.priority = wipriority;
                                 }
                                 if (!Util_1.Util.IsNullEmpty(success_wiq)) {
                                     workitem_1.success_wiq = success_wiq;

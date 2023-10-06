@@ -254,8 +254,9 @@ export class updateworkitem {
                 if(!Util.IsNullEmpty(this.config.state)) {
                     workitem.state = this.config.state;
                 }
-                if(wipriority > 0 && workitem.priority == 0) {
-                    workitem.priority = wipriority;
+                if(wipriority > 0 ) {
+                    workitem.priority = parseInt(wipriority as any);
+                    // workitem.priority = wipriority;
                 }
                 if (!Util.IsNullEmpty(success_wiq)) {
                     workitem.success_wiq = success_wiq
