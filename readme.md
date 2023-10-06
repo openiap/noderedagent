@@ -44,6 +44,12 @@ Control who can login and read the NodeRED flow, but not update it.  (default: n
 ```
 replace "users" with a role containing the users you would like to allow readonly access to this nodered instance. All users will be authenticated using openflow, so even federated users can be granted access.
 
+By defaut all http endpoints will allow anonymous access ( http in / dashboard ) (default: not set )
+```json
+    "api_role": "users",
+```
+by replacing "users" with 
+
 
 If not using a real OpenID Connect provider, ( but some OAuth type provider ) or need to enhance security on the OIDC provider, you can add the secret for the secret here
 ```json
