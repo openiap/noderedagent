@@ -23,7 +23,8 @@ export class amqp_connection {
     public credentials: Iamqp_connection;
     constructor(public config: Iamqp_connection) {
         RED.nodes.createNode(this, config);
-        // @ts-ignore
+        try {
+                    // @ts-ignore
         var global = this.context().global;
         var client = global.get('client');
         
@@ -41,24 +42,54 @@ export class amqp_connection {
         this.host = this.config.host;
         this.name = config.name || this.host;
         if (this.host != "" && this.host != null) {
-            this.client = new openiap(this.host);
-            this.client.onConnected = async (client: openiap) => {
-                try {
-                    const reply = await client.Signin({username: this.username, password: this.password} )
-                    info("signing into " + this.host + " as " + reply.user.username);
-                } catch (error) {
-                    Util.HandleError(this, error, null);
+            if(this.host.indexOf("://") > -1) {
+                var u = new URL(this.host);
+                u.username = this.username;
+                u.password = this.password;
+
+                if(this.client != null || this.client?.url != u.href) {
+                    this.client = new openiap(u.href);
+                    this.client.allowconnectgiveup = false;
+                    this.client.onConnected = async (client: openiap) => {
+                        try {
+                            // const reply = await client.Signin({username: this.username, password: this.password} )
+                            //info("signing into " + this.host + " as " + client.user reply.user.username);
+                        } catch (error) {
+                            console.log(error);
+                            // Util.HandleError(this, error, null);
+                        }
+                    };
+                    var client = this.client;
+                    this.client.connect().then(user => {
+                        var c = client;
+                        info("connected to " + this.host + " as " + user.username);
+                    }).catch((error) => {
+                        console.log(error);
+                    });
+                    info("connecting to " + this.host);    
+                } else {
+                    // Ignore, we are already connected, or should not be connected
                 }
-            };
-            this.client.connect()
-            info("connecting to " + this.host);
+            }
         } else {
             this.client = client;
+        }
+        } catch (error) {
+            console.log(error);
+            // Util.HandleError(this, error, null);
         }
     }
     async onclose(removed: boolean, done: any) {
         if (this.host != null && this.host != "") {
-            this.client.Close();
+            if(this.client != null) {
+                try {
+                    // this.client.Close();
+                    // this.client = null;
+                } catch (error) {
+                    console.log(error);                    
+                }
+                
+            }            
         }
         if (done != null) done();
     }
@@ -85,8 +116,6 @@ export class amqp_consumer_node {
             // @ts-ignore
             var global = this.context().global;
             var client = global.get('client');
-            this.client = (this.connection != null) ? this.connection.client : client;
-            
             this.node = this;
             this.name = config.name;
             // this.node.status({});
@@ -95,8 +124,16 @@ export class amqp_consumer_node {
             this.connection = RED.nodes.getNode(this.config.config);
             this._onsignedin = this.onsignedin.bind(this);
             this._onsocketclose = this.onsocketclose.bind(this);
-            this.client.on("signedin", this._onsignedin);
-            this.client.on("disconnected", this._onsocketclose);
+
+            var conn = this.connection;
+            if (this.connection?.host != "" && this.connection?.host != null) {
+                this.client = this.connection.client;
+            } else {
+                this.client = client;
+            }
+
+            this.client?.on("signedin", this._onsignedin);
+            this.client?.on("disconnected", this._onsocketclose);
             if (this.localqueue == null || this.localqueue == "") {
                 this.connect();
             } else {
@@ -115,15 +152,27 @@ export class amqp_consumer_node {
     }
     async connect() {
         try {
+            if(this.client == null) {
+                if (this != null && this.node != null) this.node.status({ fill: "red", shape: "dot", text: "Disconnected" });
+                return;
+            }
+            if(this.client.signedin == false || this.client.connected == false) {
+                throw new Error("Not signed in or connected")
+            }
             this.node.status({ fill: "blue", shape: "dot", text: "Connecting..." });
             info("consumer node in::connect");
-            this.localqueue = await this.client.RegisterQueue({
+            this.localqueue = await this.client?.RegisterQueue({
                 queuename: this.config.queue
             }, (msg: QueueEvent, payload: any, user: any, jwt:string) => {
                 this.OnMessage(msg, payload, user, jwt);
             });
-            info("registed amqp consumer as " + this.localqueue);
-            this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
+            if(this.localqueue != null && this.localqueue != "" ) {
+                info("registed amqp consumer as " + this.localqueue);
+                this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
+            } else {
+                info("maybe failed registed amqp consumer " + this.config.queue);
+                if (this != null && this.node != null) this.node.status({ fill: "red", shape: "dot", text: "Failed registering " + this.config.queue });
+            }
         } catch (error) {
             Util.HandleError(this, error, null);
             setTimeout(this.connect.bind(this), (Math.floor(Math.random() * 6) + 1) * 2000);
@@ -141,11 +190,11 @@ export class amqp_consumer_node {
         try {
             if (this.config.autoack) {
                 if(!Util.IsNullEmpty(msg.replyto)) {
-                    await this.client.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data: payload, jwt: jwt}, null)
+                    await this.client?.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data: payload, jwt: jwt}, null)
                 }
             } else {
                 payload.amqpacknowledgment = async (data)=> {
-                    await this.client.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data, jwt: jwt}, null)
+                    await this.client?.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data, jwt: jwt}, null)
                 }
             }
             if(!Util.IsNullEmpty(jwt)) payload.jwt = jwt;
@@ -159,11 +208,11 @@ export class amqp_consumer_node {
     async onclose(removed: boolean, done: any) {
         // if (this.localqueue != null && this.localqueue != "" && removed) {
         if (!Util.IsNullEmpty(this.localqueue)) {
-            await this.client.UnRegisterQueue({queuename: this.localqueue})
+            await this.client?.UnRegisterQueue({queuename: this.localqueue})
             this.localqueue = "";
         }
-        this.client.removeListener("signedin", this._onsignedin);
-        this.client.removeListener("disconnected", this._onsocketclose);
+        this.client?.removeListener("signedin", this._onsignedin);
+        this.client?.removeListener("disconnected", this._onsocketclose);
         if (done != null) done();
     }
 }
@@ -197,7 +246,6 @@ export class amqp_publisher_node {
             // @ts-ignore
             var global = this.context().global;
             var client = global.get('client');
-            this.client = (this.connection != null) ? this.connection.client : client;
 
             this.node = this;
             this.name = config.name;
@@ -205,6 +253,14 @@ export class amqp_publisher_node {
             this.node.on("input", this.oninput);
             this.node.on("close", this.onclose);
             this.connection = RED.nodes.getNode(this.config.config);
+
+            var conn = this.connection;
+            if (this.connection?.host != "" && this.connection?.host != null) {
+                this.client = this.connection.client;
+            } else {
+                this.client = client;
+            }
+            
             this._onsignedin = this.onsignedin.bind(this);
             this._onsocketclose = this.onsocketclose.bind(this);
             this.client.on("signedin", this._onsignedin);
@@ -225,6 +281,14 @@ export class amqp_publisher_node {
     }
     async connect() {
         try {
+            if(this.client == null) {
+                if (this != null && this.node != null) this.node.status({ fill: "red", shape: "dot", text: "Disconnected" });
+                return;
+            }
+            if(this.client.signedin == false || this.client.connected == false) {
+                throw new Error("Not signed in or connected")
+            }
+
             this.node.status({ fill: "blue", shape: "dot", text: "Connecting..." });
             info( "track::amqp publiser node::connect");
             this.localqueue = this.config.localqueue;

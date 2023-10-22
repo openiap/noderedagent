@@ -47,6 +47,7 @@ var Logger_1 = require("../Logger");
 var amqp_connection = /** @class */ (function () {
     function amqp_connection(config) {
         var _this = this;
+        var _a;
         this.config = config;
         this.node = null;
         this.name = "";
@@ -54,54 +55,79 @@ var amqp_connection = /** @class */ (function () {
         this.password = "";
         this.host = "";
         RED.nodes.createNode(this, config);
-        // @ts-ignore
-        var global = this.context().global;
-        var client = global.get('client');
-        this.node = this;
-        this.node.status({});
-        this.node.on("close", this.onclose);
-        this.credentials = this.node.credentials;
-        if (this.node.credentials && this.node.credentials.hasOwnProperty("username")) {
-            this.username = this.node.credentials.username;
-        }
-        if (this.node.credentials && this.node.credentials.hasOwnProperty("password")) {
-            this.password = this.node.credentials.password;
-        }
-        this.host = this.config.host;
-        this.name = config.name || this.host;
-        if (this.host != "" && this.host != null) {
-            this.client = new nodeapi_1.openiap(this.host);
-            this.client.onConnected = function (client) { return __awaiter(_this, void 0, void 0, function () {
-                var reply, error_1;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            _a.trys.push([0, 2, , 3]);
-                            return [4 /*yield*/, client.Signin({ username: this.username, password: this.password })];
-                        case 1:
-                            reply = _a.sent();
-                            info("signing into " + this.host + " as " + reply.user.username);
-                            return [3 /*break*/, 3];
-                        case 2:
-                            error_1 = _a.sent();
-                            Util_1.Util.HandleError(this, error_1, null);
-                            return [3 /*break*/, 3];
-                        case 3: return [2 /*return*/];
+        try {
+            // @ts-ignore
+            var global = this.context().global;
+            var client = global.get('client');
+            this.node = this;
+            this.node.status({});
+            this.node.on("close", this.onclose);
+            this.credentials = this.node.credentials;
+            if (this.node.credentials && this.node.credentials.hasOwnProperty("username")) {
+                this.username = this.node.credentials.username;
+            }
+            if (this.node.credentials && this.node.credentials.hasOwnProperty("password")) {
+                this.password = this.node.credentials.password;
+            }
+            this.host = this.config.host;
+            this.name = config.name || this.host;
+            if (this.host != "" && this.host != null) {
+                if (this.host.indexOf("://") > -1) {
+                    var u = new URL(this.host);
+                    u.username = this.username;
+                    u.password = this.password;
+                    if (this.client != null || ((_a = this.client) === null || _a === void 0 ? void 0 : _a.url) != u.href) {
+                        this.client = new nodeapi_1.openiap(u.href);
+                        this.client.allowconnectgiveup = false;
+                        this.client.onConnected = function (client) { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                try {
+                                    // const reply = await client.Signin({username: this.username, password: this.password} )
+                                    //info("signing into " + this.host + " as " + client.user reply.user.username);
+                                }
+                                catch (error) {
+                                    console.log(error);
+                                    // Util.HandleError(this, error, null);
+                                }
+                                return [2 /*return*/];
+                            });
+                        }); };
+                        var client = this.client;
+                        this.client.connect().then(function (user) {
+                            var c = client;
+                            info("connected to " + _this.host + " as " + user.username);
+                        })["catch"](function (error) {
+                            console.log(error);
+                        });
+                        info("connecting to " + this.host);
                     }
-                });
-            }); };
-            this.client.connect();
-            info("connecting to " + this.host);
+                    else {
+                        // Ignore, we are already connected, or should not be connected
+                    }
+                }
+            }
+            else {
+                this.client = client;
+            }
         }
-        else {
-            this.client = client;
+        catch (error) {
+            console.log(error);
+            // Util.HandleError(this, error, null);
         }
     }
     amqp_connection.prototype.onclose = function (removed, done) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (this.host != null && this.host != "") {
-                    this.client.Close();
+                    if (this.client != null) {
+                        try {
+                            // this.client.Close();
+                            // this.client = null;
+                        }
+                        catch (error) {
+                            console.log(error);
+                        }
+                    }
                 }
                 if (done != null)
                     done();
@@ -114,6 +140,7 @@ var amqp_connection = /** @class */ (function () {
 exports.amqp_connection = amqp_connection;
 var amqp_consumer_node = /** @class */ (function () {
     function amqp_consumer_node(config) {
+        var _a, _b, _c, _d;
         this.config = config;
         this.node = null;
         this.name = "";
@@ -126,7 +153,6 @@ var amqp_consumer_node = /** @class */ (function () {
             // @ts-ignore
             var global = this.context().global;
             var client = global.get('client');
-            this.client = (this.connection != null) ? this.connection.client : client;
             this.node = this;
             this.name = config.name;
             // this.node.status({});
@@ -135,8 +161,15 @@ var amqp_consumer_node = /** @class */ (function () {
             this.connection = RED.nodes.getNode(this.config.config);
             this._onsignedin = this.onsignedin.bind(this);
             this._onsocketclose = this.onsocketclose.bind(this);
-            this.client.on("signedin", this._onsignedin);
-            this.client.on("disconnected", this._onsocketclose);
+            var conn = this.connection;
+            if (((_a = this.connection) === null || _a === void 0 ? void 0 : _a.host) != "" && ((_b = this.connection) === null || _b === void 0 ? void 0 : _b.host) != null) {
+                this.client = this.connection.client;
+            }
+            else {
+                this.client = client;
+            }
+            (_c = this.client) === null || _c === void 0 ? void 0 : _c.on("signedin", this._onsignedin);
+            (_d = this.client) === null || _d === void 0 ? void 0 : _d.on("disconnected", this._onsocketclose);
             if (this.localqueue == null || this.localqueue == "") {
                 this.connect();
             }
@@ -158,29 +191,45 @@ var amqp_consumer_node = /** @class */ (function () {
         this.connect();
     };
     amqp_consumer_node.prototype.connect = function () {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var _a, error_2;
+            var _b, error_1;
             var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
+                        _c.trys.push([0, 2, , 3]);
+                        if (this.client == null) {
+                            if (this != null && this.node != null)
+                                this.node.status({ fill: "red", shape: "dot", text: "Disconnected" });
+                            return [2 /*return*/];
+                        }
+                        if (this.client.signedin == false || this.client.connected == false) {
+                            throw new Error("Not signed in or connected");
+                        }
                         this.node.status({ fill: "blue", shape: "dot", text: "Connecting..." });
                         info("consumer node in::connect");
-                        _a = this;
-                        return [4 /*yield*/, this.client.RegisterQueue({
+                        _b = this;
+                        return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.RegisterQueue({
                                 queuename: this.config.queue
                             }, function (msg, payload, user, jwt) {
                                 _this.OnMessage(msg, payload, user, jwt);
-                            })];
+                            }))];
                     case 1:
-                        _a.localqueue = _b.sent();
-                        info("registed amqp consumer as " + this.localqueue);
-                        this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
+                        _b.localqueue = _c.sent();
+                        if (this.localqueue != null && this.localqueue != "") {
+                            info("registed amqp consumer as " + this.localqueue);
+                            this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
+                        }
+                        else {
+                            info("maybe failed registed amqp consumer " + this.config.queue);
+                            if (this != null && this.node != null)
+                                this.node.status({ fill: "red", shape: "dot", text: "Failed registering " + this.config.queue });
+                        }
                         return [3 /*break*/, 3];
                     case 2:
-                        error_2 = _b.sent();
-                        Util_1.Util.HandleError(this, error_2, null);
+                        error_1 = _c.sent();
+                        Util_1.Util.HandleError(this, error_1, null);
                         setTimeout(this.connect.bind(this), (Math.floor(Math.random() * 6) + 1) * 2000);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
@@ -189,39 +238,41 @@ var amqp_consumer_node = /** @class */ (function () {
         });
     };
     amqp_consumer_node.prototype.OnMessage = function (msg, payload, user, jwt) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var t, ctx, error_3;
+            var t, ctx, error_2;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         t = api_1.trace.getSpan(api_1.context.active());
                         if (t != null) {
                             ctx = t.spanContext();
                             console.log("OnMessage traceid" + ctx.traceId + " spanid: " + ctx.spanId);
                         }
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _a.trys.push([1, 6, 7, 8]);
+                        _b.trys.push([1, 6, 7, 8]);
                         if (!this.config.autoack) return [3 /*break*/, 4];
                         if (!!Util_1.Util.IsNullEmpty(msg.replyto)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: payload, jwt: jwt }, null)];
+                        return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: payload, jwt: jwt }, null))];
                     case 2:
-                        _a.sent();
-                        _a.label = 3;
+                        _b.sent();
+                        _b.label = 3;
                     case 3: return [3 /*break*/, 5];
                     case 4:
                         payload.amqpacknowledgment = function (data) { return __awaiter(_this, void 0, void 0, function () {
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: data, jwt: jwt }, null)];
+                            var _a;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0: return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: data, jwt: jwt }, null))];
                                     case 1:
-                                        _a.sent();
+                                        _b.sent();
                                         return [2 /*return*/];
                                 }
                             });
                         }); };
-                        _a.label = 5;
+                        _b.label = 5;
                     case 5:
                         if (!Util_1.Util.IsNullEmpty(jwt))
                             payload.jwt = jwt;
@@ -230,8 +281,8 @@ var amqp_consumer_node = /** @class */ (function () {
                         this.node.send(payload);
                         return [3 /*break*/, 8];
                     case 6:
-                        error_3 = _a.sent();
-                        Util_1.Util.HandleError(this, error_3, null);
+                        error_2 = _b.sent();
+                        Util_1.Util.HandleError(this, error_2, null);
                         return [3 /*break*/, 8];
                     case 7: return [7 /*endfinally*/];
                     case 8: return [2 /*return*/];
@@ -240,19 +291,20 @@ var amqp_consumer_node = /** @class */ (function () {
         });
     };
     amqp_consumer_node.prototype.onclose = function (removed, done) {
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         if (!!Util_1.Util.IsNullEmpty(this.localqueue)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.client.UnRegisterQueue({ queuename: this.localqueue })];
+                        return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.UnRegisterQueue({ queuename: this.localqueue }))];
                     case 1:
-                        _a.sent();
+                        _d.sent();
                         this.localqueue = "";
-                        _a.label = 2;
+                        _d.label = 2;
                     case 2:
-                        this.client.removeListener("signedin", this._onsignedin);
-                        this.client.removeListener("disconnected", this._onsocketclose);
+                        (_b = this.client) === null || _b === void 0 ? void 0 : _b.removeListener("signedin", this._onsignedin);
+                        (_c = this.client) === null || _c === void 0 ? void 0 : _c.removeListener("disconnected", this._onsocketclose);
                         if (done != null)
                             done();
                         return [2 /*return*/];
@@ -265,6 +317,7 @@ var amqp_consumer_node = /** @class */ (function () {
 exports.amqp_consumer_node = amqp_consumer_node;
 var amqp_publisher_node = /** @class */ (function () {
     function amqp_publisher_node(config) {
+        var _a, _b;
         this.config = config;
         this.node = null;
         this.client = null;
@@ -278,13 +331,19 @@ var amqp_publisher_node = /** @class */ (function () {
             // @ts-ignore
             var global = this.context().global;
             var client = global.get('client');
-            this.client = (this.connection != null) ? this.connection.client : client;
             this.node = this;
             this.name = config.name;
             this.node.status({});
             this.node.on("input", this.oninput);
             this.node.on("close", this.onclose);
             this.connection = RED.nodes.getNode(this.config.config);
+            var conn = this.connection;
+            if (((_a = this.connection) === null || _a === void 0 ? void 0 : _a.host) != "" && ((_b = this.connection) === null || _b === void 0 ? void 0 : _b.host) != null) {
+                this.client = this.connection.client;
+            }
+            else {
+                this.client = client;
+            }
             this._onsignedin = this.onsignedin.bind(this);
             this._onsocketclose = this.onsocketclose.bind(this);
             this.client.on("signedin", this._onsignedin);
@@ -308,12 +367,20 @@ var amqp_publisher_node = /** @class */ (function () {
     };
     amqp_publisher_node.prototype.connect = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, error_4;
+            var _a, error_3;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
+                        if (this.client == null) {
+                            if (this != null && this.node != null)
+                                this.node.status({ fill: "red", shape: "dot", text: "Disconnected" });
+                            return [2 /*return*/];
+                        }
+                        if (this.client.signedin == false || this.client.connected == false) {
+                            throw new Error("Not signed in or connected");
+                        }
                         this.node.status({ fill: "blue", shape: "dot", text: "Connecting..." });
                         info("track::amqp publiser node::connect");
                         this.localqueue = this.config.localqueue;
@@ -331,9 +398,9 @@ var amqp_publisher_node = /** @class */ (function () {
                         }
                         return [3 /*break*/, 3];
                     case 2:
-                        error_4 = _b.sent();
+                        error_3 = _b.sent();
                         this.localqueue = "";
-                        Util_1.Util.HandleError(this, error_4, null);
+                        Util_1.Util.HandleError(this, error_3, null);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -386,7 +453,7 @@ var amqp_publisher_node = /** @class */ (function () {
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("Publisher Node Send", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
-                    var t, ctx, queuename, exchangename, routingkey, striptoken, priority, data, expiration, error_5, error_6;
+                    var t, ctx, queuename, exchangename, routingkey, striptoken, priority, data, expiration, error_4, error_5;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
@@ -440,16 +507,16 @@ var amqp_publisher_node = /** @class */ (function () {
                                 amqp_publisher_node.payloads[msg._msgid] = msg;
                                 return [3 /*break*/, 7];
                             case 6:
-                                error_5 = _a.sent();
-                                data.error = error_5;
+                                error_4 = _a.sent();
+                                data.error = error_4;
                                 this.node.send([null, data]);
                                 return [3 /*break*/, 7];
                             case 7:
                                 this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
                                 return [3 /*break*/, 10];
                             case 8:
-                                error_6 = _a.sent();
-                                Util_1.Util.HandleError(this, error_6, null);
+                                error_5 = _a.sent();
+                                Util_1.Util.HandleError(this, error_5, null);
                                 return [3 /*break*/, 10];
                             case 9:
                                 span === null || span === void 0 ? void 0 : span.end();
@@ -509,7 +576,7 @@ var amqp_acknowledgment_node = /** @class */ (function () {
                 traceId = logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId;
                 spanId = logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId;
                 nodeapi_1.apiinstrumentation.With("Acknowledgment node", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
-                    var data, error_7;
+                    var data, error_6;
                     var _a;
                     return __generator(this, function (_b) {
                         switch (_b.label) {
@@ -531,8 +598,8 @@ var amqp_acknowledgment_node = /** @class */ (function () {
                                 this.node.status({});
                                 return [3 /*break*/, 5];
                             case 3:
-                                error_7 = _b.sent();
-                                err(error_7);
+                                error_6 = _b.sent();
+                                err(error_6);
                                 return [3 /*break*/, 5];
                             case 4:
                                 span === null || span === void 0 ? void 0 : span.end();
@@ -597,7 +664,7 @@ var amqp_exchange_node = /** @class */ (function () {
     };
     amqp_exchange_node.prototype.connect = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, error_8;
+            var _a, error_7;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -618,8 +685,8 @@ var amqp_exchange_node = /** @class */ (function () {
                         this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.config.exchange });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_8 = _b.sent();
-                        Util_1.Util.HandleError(this, error_8, null);
+                        error_7 = _b.sent();
+                        Util_1.Util.HandleError(this, error_7, null);
                         setTimeout(this.connect.bind(this), (Math.floor(Math.random() * 6) + 1) * 2000);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
