@@ -872,10 +872,11 @@ export class openiap_storage {
                 }
             }
         }
-        if (exitprocess ) {
-            info("Running as docker, just quit process, kubernetes will start a new version");
-            process.exit(1);
-        }
+        // TODO: readd at some point ?
+        // if (exitprocess ) {
+        //     info("Running as docker, just quit process, kubernetes will start a new version");
+        //     process.exit(1);
+        // }
     }
     public async _getSessions(): Promise<any[]> {
         let item: any[] = [];

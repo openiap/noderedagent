@@ -1170,10 +1170,6 @@ var openiap_storage = /** @class */ (function () {
                                 }
                             }
                         }
-                        if (exitprocess) {
-                            info("Running as docker, just quit process, kubernetes will start a new version");
-                            process.exit(1);
-                        }
                         return [2 /*return*/];
                 }
             });
