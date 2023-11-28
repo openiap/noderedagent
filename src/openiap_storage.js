@@ -767,7 +767,7 @@ var openiap_storage = /** @class */ (function () {
     };
     openiap_storage.prototype._getSettings = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var settings, result, npmrc, npmrcFile, npmrc_1, modules, hadErrors, arr, error_4;
+            var settings, result, npmrc, npmrcFile, HTTP_PROXY, HTTPS_PROXY, NO_PROXY, npmrc_1, modules, hadErrors, arr, error_4;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -785,14 +785,23 @@ var openiap_storage = /** @class */ (function () {
                     case 2:
                         npmrc = _a.sent();
                         npmrcFile = path.join(this.settings.userDir, ".npmrc");
+                        HTTP_PROXY = process.env.HTTP_PROXY;
+                        HTTPS_PROXY = process.env.HTTPS_PROXY;
+                        NO_PROXY = process.env.NO_PROXY;
+                        if (HTTP_PROXY == null || HTTP_PROXY == "" || HTTP_PROXY == "undefined" || HTTP_PROXY == "null")
+                            HTTP_PROXY = "";
+                        if (HTTPS_PROXY == null || HTTPS_PROXY == "" || HTTPS_PROXY == "undefined" || HTTPS_PROXY == "null")
+                            HTTPS_PROXY = "";
+                        if (NO_PROXY == null || NO_PROXY == "" || NO_PROXY == "undefined" || NO_PROXY == "null")
+                            NO_PROXY = "";
                         if (npmrc != null && npmrc.content != null) {
                             fs.writeFileSync(npmrcFile, npmrc.content);
                         }
-                        else if (process.env.HTTP_PROXY != "" || process.env.HTTPS_PROXY != "") {
+                        else if (HTTP_PROXY != "" || HTTPS_PROXY != "") {
                             npmrc_1 = new noderednpmrc();
-                            npmrc_1.content = "proxy=" + process.env.HTTP_PROXY + "\n" + "https-proxy=" + process.env.HTTPS_PROXY;
-                            if (process.env.NO_PROXY != "") {
-                                npmrc_1.content += "\n" + "noproxy=" + process.env.NO_PROXY;
+                            npmrc_1.content = "proxy=" + HTTP_PROXY + "\n" + "https-proxy=" + HTTPS_PROXY;
+                            if (NO_PROXY != "") {
+                                npmrc_1.content += "\n" + "noproxy=" + NO_PROXY;
                             }
                             npmrc_1.content += "\n" + "registry=http://registry.npmjs.org/";
                             fs.writeFileSync(npmrcFile, npmrc_1.content);

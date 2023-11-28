@@ -564,15 +564,21 @@ export class openiap_storage {
         settings = JSON.parse(result[0].settings);
         const npmrc = await this._getnpmrc();
         const npmrcFile: string = path.join(this.settings.userDir, ".npmrc");
+        let HTTP_PROXY = process.env.HTTP_PROXY;
+        let HTTPS_PROXY = process.env.HTTPS_PROXY;
+        let NO_PROXY = process.env.NO_PROXY;
+        if(HTTP_PROXY == null || HTTP_PROXY == "" || HTTP_PROXY == "undefined" || HTTP_PROXY == "null") HTTP_PROXY = "";
+        if(HTTPS_PROXY == null || HTTPS_PROXY == "" || HTTPS_PROXY == "undefined" || HTTPS_PROXY == "null") HTTPS_PROXY = "";
+        if(NO_PROXY == null || NO_PROXY == "" || NO_PROXY == "undefined" || NO_PROXY == "null") NO_PROXY = "";
         if (npmrc != null && npmrc.content != null) {
             fs.writeFileSync(npmrcFile, npmrc.content);
-        } else if (process.env.HTTP_PROXY != "" || process.env.HTTPS_PROXY != "") {
+        } else if (HTTP_PROXY != "" || HTTPS_PROXY != "") {
             // According to https://docs.npmjs.com/cli/v7/using-npm/config it should be picked up by environment variables, 
             // HTTP_PROXY, HTTPS_PROXY and NO_PROXY 
             const npmrc = new noderednpmrc();
-            npmrc.content = "proxy=" + process.env.HTTP_PROXY + "\n" + "https-proxy=" + process.env.HTTPS_PROXY;
-            if (process.env.NO_PROXY != "") {
-                npmrc.content += "\n" + "noproxy=" + process.env.NO_PROXY;
+            npmrc.content = "proxy=" + HTTP_PROXY + "\n" + "https-proxy=" + HTTPS_PROXY;
+            if (NO_PROXY != "") {
+                npmrc.content += "\n" + "noproxy=" + NO_PROXY;
             }
             npmrc.content += "\n" + "registry=http://registry.npmjs.org/";
             fs.writeFileSync(npmrcFile, npmrc.content);
