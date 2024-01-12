@@ -1,16 +1,22 @@
 FROM openiap/nodeagent:latest
-# WORKDIR /root/.openiap/packages/noderedagent
-RUN mkdir -p /root/.openiap/packages/noderedagent
-# Add package definition
-COPY noderedagent.json /root/.openiap/packages/noderedagent.json
-# Fix node-red scan error
-RUN mkdir -p /usr/local/lib/node_modules
-COPY tsconfig.json /root/.openiap/packages/noderedagent/tsconfig.json
-COPY package.json /root/.openiap/packages/noderedagent/package.json
-RUN cd /root/.openiap/packages/noderedagent && npm i
-COPY src /root/.openiap/packages/noderedagent/src
-ENV forcedpackageid=noderedagent
 
-# node dist/runagent.js
-# cd /root/.openiap/packages/noderedagent
-# node src/main.js
+# Add package definition
+COPY --chown=openiapuser:root noderedagent.json /home/openiap/.openiap/packages/noderedagent.json
+COPY --chown=openiapuser:root tsconfig.json /home/openiap/.openiap/packages/noderedagent/tsconfig.json
+COPY --chown=openiapuser:root package.json /home/openiap/.openiap/packages/noderedagent/package.json
+
+# Install dependencies
+RUN cd /home/openiap/.openiap/packages/noderedagent && npm i
+
+# Copy source code
+COPY --chown=openiapuser:root src /home/openiap/.openiap/packages/noderedagent/src
+
+USER root
+# Set the correct permissions for OpenShift
+RUN chown -R openiapuser:root /home/openiap/.openiap/packages && \
+    chmod -R 775 /home/openiap/.openiap/packages && \
+    chmod -R 775 /home/openiap/.openiap/packages/noderedagent
+
+USER openiapuser
+
+ENV forcedpackageid=noderedagent
