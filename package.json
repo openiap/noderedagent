@@ -1,6 +1,6 @@
 {
     "name": "@openiap/noderedagent",
-    "version": "1.5.2",
+    "version": "1.5.3",
     "description": "",
     "main": "./src/main.js",
     "types": "./src/main.d.ts",
@@ -53,6 +53,14 @@
         "language": "nodejs",
         "typescript": true,
         "daemon": true,
-        "chromium": false
+        "chromium": false,
+        "ports": [
+            {
+                "port": 3000,
+                "portname": "web",
+                "protocol": "TCP",
+                "web": true
+            }
+        ]
     }
 }
