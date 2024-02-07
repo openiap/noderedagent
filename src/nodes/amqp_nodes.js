@@ -501,8 +501,10 @@ var amqp_publisher_node = /** @class */ (function () {
                                 _a.label = 4;
                             case 4:
                                 _a.trys.push([4, 6, , 7]);
+                                // @ts-ignore
                                 return [4 /*yield*/, this.client.QueueMessage({ expiration: expiration, correlationId: msg._msgid, exchangename: exchangename, routingkey: routingkey, queuename: queuename, replyto: this.localqueue, data: data, striptoken: striptoken }, null)];
                             case 5:
+                                // @ts-ignore
                                 _a.sent();
                                 amqp_publisher_node.payloads[msg._msgid] = msg;
                                 return [3 /*break*/, 7];

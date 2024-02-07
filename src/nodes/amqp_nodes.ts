@@ -371,6 +371,7 @@ export class amqp_publisher_node {
                 const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 5000);
                 this.node.status({ fill: "blue", shape: "dot", text: "Sending message ..." });
                 try {
+                    // @ts-ignore
                     await this.client.QueueMessage({ expiration, correlationId: msg._msgid, exchangename, routingkey, queuename, replyto: this.localqueue, data, striptoken }, null);
                     amqp_publisher_node.payloads[msg._msgid] = msg;
                 } catch (error) {
