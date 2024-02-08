@@ -1,4 +1,4 @@
-FROM openiap/nodeagent:0.0.91-24
+FROM openiap/nodeagent:0.0.91-25
 
 # Add package definition
 COPY --chown=openiapuser:root noderedagent.json /home/openiap/.openiap/packages/noderedagent.json
