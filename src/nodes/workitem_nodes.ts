@@ -34,7 +34,8 @@ export class workitemqueue_config {
 export interface iaddworkitem {
     name: string;
     config: any;
-    payload: any;
+    payload: string;
+    workitem: string;
 }
 export class addworkitem {
     public node: Red = null;
@@ -94,8 +95,8 @@ export class addworkitem {
                     }
                 }
                 const result = await this.client.PushWorkitem({ payload, files, wiqid, wiq, name: topic, nextrun, priority: wipriority, success_wiq, failed_wiq })
-                if (!Util.IsNullEmpty(this.config.payload)) {
-                    Util.SetMessageProperty(msg, this.config.payload, result);
+                if (!Util.IsNullEmpty(this.config.workitem)) {
+                    Util.SetMessageProperty(msg, this.config.workitem, result);
                 }
                 this.node.send(msg);
                 this.node.status({});

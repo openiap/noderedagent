@@ -74,6 +74,11 @@ RED.nodes.registerType('iworkitemqueue-config', {
   <input style="width:70%" type="text" id="node-input-payload" placeholder="Workitem payload">
 </div>
 <div class="form-row">
+  <label><i class="fa fa-tag"></i> Workitem</label>
+  <input type="hidden" id="node-input-workitemtype">
+  <input style="width:70%" type="text" id="node-input-workitem" placeholder="Workitem workitem">
+</div>
+<div class="form-row">
   <label><i class="fa fa-tag"></i> Nextrun</label>
   <input type="hidden" id="node-input-nextruntype">
   <input style="width:70%" type="text" id="node-input-nextrun" placeholder="Set time when this can be processed">
@@ -115,6 +120,8 @@ RED.nodes.registerType('workitem addworkitem', {
     config: { value: "", type: "iworkitemqueue-config", required: true },
     payload: { value: "payload", validate: validate("payload") },
     payloadtype: { value: "" },
+    workitem: { value: "workitem", validate: validate("workitem") },
+    workitemtype: { value: "" },
     topic: { value: "topic", validate: validate("topic") },
     topictype: { value: "" },
     nextrun: { value: "nextrun", validate: validate("nextrun") },
@@ -141,6 +148,11 @@ RED.nodes.registerType('workitem addworkitem', {
     $("#node-input-payload").typedInput({
       default: 'msg',
       typeField: $("#node-input-payloadtype"),
+      types: ['msg']
+    });
+    $("#node-input-workitem").typedInput({
+      default: 'msg',
+      typeField: $("#node-input-workitemtype"),
       types: ['msg']
     });
     $("#node-input-topic").typedInput({

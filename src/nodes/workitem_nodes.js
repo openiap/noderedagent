@@ -151,8 +151,8 @@ var addworkitem = /** @class */ (function () {
                                 return [4 /*yield*/, this.client.PushWorkitem({ payload: payload, files: files, wiqid: wiqid, wiq: wiq, name: topic, nextrun: nextrun, priority: wipriority, success_wiq: success_wiq, failed_wiq: failed_wiq })];
                             case 8:
                                 result = _b.sent();
-                                if (!Util_1.Util.IsNullEmpty(this.config.payload)) {
-                                    Util_1.Util.SetMessageProperty(msg, this.config.payload, result);
+                                if (!Util_1.Util.IsNullEmpty(this.config.workitem)) {
+                                    Util_1.Util.SetMessageProperty(msg, this.config.workitem, result);
                                 }
                                 this.node.send(msg);
                                 this.node.status({});
