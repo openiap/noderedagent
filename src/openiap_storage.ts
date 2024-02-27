@@ -59,26 +59,33 @@ export class openiap_storage {
     }
 
     scanDirForNodesModules(dir) {
-        let files = fs.readdirSync(dir, { encoding: 'utf8', withFileTypes: true });
         let results = [];
-        files.sort();
-        files.forEach((fn) => {
-            var stats = fs.statSync(path.join(dir, fn.name));
-            if (stats.isFile()) {
-            } else if (stats.isDirectory()) {
-                if (fn.name == "node_modules") {
-                    results = results.concat(this.scanDirForNodesModules(path.join(dir, fn.name)));
-                } else {
-                    const pkgfn = path.join(dir, fn.name, "package.json");
-                    if (fs.existsSync(pkgfn)) {
-                        var pkg = require(pkgfn);
-                        // var moduleDir = path.join(dir, fn);
-                        // results.push({ dir: moduleDir, package: pkg });
-                        results.push(pkg);
+        try {
+            let files = fs.readdirSync(dir, { encoding: 'utf8', withFileTypes: true });
+            files.sort();
+            files.forEach((fn) => {
+                try {
+                    var stats = fs.statSync(path.join(dir, fn.name));
+                    if (stats.isFile()) {
+                    } else if (stats.isDirectory()) {
+                        if (fn.name == "node_modules") {
+                            results = results.concat(this.scanDirForNodesModules(path.join(dir, fn.name)));
+                        } else {
+                            const pkgfn = path.join(dir, fn.name, "package.json");
+                            if (fs.existsSync(pkgfn)) {
+                                var pkg = require(pkgfn);
+                                // var moduleDir = path.join(dir, fn);
+                                // results.push({ dir: moduleDir, package: pkg });
+                                results.push(pkg);
+                            }
+                        }
                     }
+                } catch (error) {                    
                 }
-            }
-        });
+            });
+        } catch (error) {
+            
+        }
         return results;
     }
     async GetMissingModules(settings: any) {
