@@ -102,7 +102,7 @@ function onSignedIn(client, user) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var client, api_role, credential_cache_seconds, settings, user, session, domain, protocol, externalport, port, well_known, json, admin_role, read_role, oidc_client_id, oidc_client_secret, options;
+        var client, api_role, credential_cache_seconds, port, settings, user, session, domain, protocol, externalport, well_known, json, admin_role, read_role, oidc_client_id, oidc_client_secret, options;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -124,6 +124,13 @@ function main() {
                         // config.DoDumpToConsole = true;
                         // config.doDumpMesssages = true;
                         // config.doDumpRPCTraceIds = true;
+                    }
+                    port = "3000";
+                    if (process.env.PORT != null && process.env.PORT != "") {
+                        port = process.env.PORT;
+                    }
+                    if (process.env.port != null && process.env.port != "") {
+                        port = process.env.port;
                     }
                     settings = new nodered_settings_1.nodered_settings();
                     settings.uiPort = parseInt(port);
@@ -162,13 +169,6 @@ function main() {
                     domain = process.env.domain || "localhost.openiap.io";
                     protocol = process.env.protocol || "http";
                     externalport = process.env.externalport || "";
-                    port = "3000";
-                    if (process.env.PORT != null && process.env.PORT != "") {
-                        port = process.env.PORT;
-                    }
-                    if (process.env.port != null && process.env.port != "") {
-                        port = process.env.port;
-                    }
                     console.log("port: " + port + " externalport: " + process.env.externalport);
                     if (port == null && process.env.externalport == null) {
                         externalport = "3000";
