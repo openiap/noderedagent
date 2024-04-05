@@ -80,6 +80,7 @@ async function main() {
     // config.doDumpRPCTraceIds = true;
   }
   const settings = new nodered_settings();
+  settings.uiPort = parseInt(port);
   settings.functionGlobalContext.client = client;
   
   settings.userDir = path.join(process.cwd(), "data");
@@ -117,8 +118,9 @@ async function main() {
   var domain = process.env.domain || "localhost.openiap.io";
   var protocol = process.env.protocol || "http";
   var externalport = process.env.externalport || "";
-  console.log("port: " + process.env.port + " externalport: " + process.env.externalport)
-  if(process.env.port == null && process.env.externalport == null) {
+  var port =  process.env.port || process.env.PORT || "3000";
+  console.log("port: " + port + " externalport: " + process.env.externalport)
+  if(port == null && process.env.externalport == null) {
     externalport = "3000";
   }
   if (externalport != "") {
