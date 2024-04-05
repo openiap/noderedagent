@@ -162,7 +162,13 @@ function main() {
                     domain = process.env.domain || "localhost.openiap.io";
                     protocol = process.env.protocol || "http";
                     externalport = process.env.externalport || "";
-                    port = process.env.port || process.env.PORT || "3000";
+                    port = "3000";
+                    if (process.env.PORT != null && process.env.PORT != "") {
+                        port = process.env.PORT;
+                    }
+                    if (process.env.port != null && process.env.port != "") {
+                        port = process.env.port;
+                    }
                     console.log("port: " + port + " externalport: " + process.env.externalport);
                     if (port == null && process.env.externalport == null) {
                         externalport = "3000";
