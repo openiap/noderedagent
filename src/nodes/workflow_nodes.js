@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.assign_workflow_node = exports.get_workflows = exports.get_workflow_forms = exports.workflow_out_node = exports.workflow_in_node = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var RED = require("node-red");
@@ -460,10 +460,10 @@ var workflow_out_node = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     workflow_out_node.prototype.oninput = function (msg, send, done) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api workflow out", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -843,10 +843,10 @@ var assign_workflow_node = /** @class */ (function () {
         });
     };
     assign_workflow_node.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api assign workflow", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {

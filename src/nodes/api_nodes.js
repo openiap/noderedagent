@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.custom = exports.memorydump = exports.drop_collection = exports.list_collections = exports.api_watch = exports.api_aggregate = exports.upload_file = exports.download_file = exports.revoke_permission = exports.grant_permission = exports.api_updatedocument = exports.get_api_users = exports.get_api_userroles = exports.get_api_roles = exports.api_deletemany = exports.api_delete = exports.api_addorupdate = exports.api_update = exports.api_addmany = exports.api_add = exports.api_get = exports.api_get_jwt = exports.api_credentials = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var info = nodeapi_1.config.info, warn = nodeapi_1.config.warn, err = nodeapi_1.config.err;
@@ -87,10 +87,10 @@ var api_get_jwt = /** @class */ (function () {
         return !isNaN(num);
     };
     api_get_jwt.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api get jwt", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -179,10 +179,10 @@ var api_get = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_get.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api get", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -330,10 +330,10 @@ var api_add = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_add.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api add", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -407,7 +407,7 @@ var api_add = /** @class */ (function () {
                                     Promises.push(this.client.InsertOne({ collectionname: collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }));
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                                return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p["catch"](function (e) { return e; }); }))];
+                                return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p.catch(function (e) { return e; }); }))];
                             case 7:
                                 tempresults = _a.sent();
                                 results = results.concat(tempresults);
@@ -469,10 +469,10 @@ var api_addmany = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_addmany.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api addmany", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -604,10 +604,10 @@ var api_update = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_update.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api update", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -741,10 +741,10 @@ var api_addorupdate = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_addorupdate.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api addorupdate", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -885,10 +885,10 @@ var api_delete = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_delete.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api delete", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -945,7 +945,7 @@ var api_delete = /** @class */ (function () {
                                     Promises.push(this.client.DeleteOne({ collectionname: collectionname, id: id, jwt: msg.jwt }));
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                                return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p["catch"](function (e) { return e; }); }))];
+                                return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p.catch(function (e) { return e; }); }))];
                             case 6:
                                 tempresults = _a.sent();
                                 results = results.concat(tempresults);
@@ -1000,10 +1000,10 @@ var api_deletemany = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_deletemany.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api deletemany", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -1243,10 +1243,10 @@ var api_updatedocument = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_updatedocument.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api updatedocument", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -1334,10 +1334,10 @@ var grant_permission = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     grant_permission.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api grant permission", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -1459,10 +1459,10 @@ var revoke_permission = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     revoke_permission.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api revoke permission", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -1573,10 +1573,10 @@ var download_file = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     download_file.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api download file", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -1656,10 +1656,10 @@ var upload_file = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     upload_file.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api upload file", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -1732,10 +1732,10 @@ var api_aggregate = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     api_aggregate.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api aggregate", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -1892,10 +1892,10 @@ var list_collections = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     list_collections.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api list collections", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -1949,10 +1949,10 @@ var drop_collection = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     drop_collection.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api drop collections", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -2006,10 +2006,10 @@ var memorydump = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     memorydump.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api memorydump", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -2144,10 +2144,10 @@ var custom = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     custom.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api custom", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {

@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.amqp_exchange_node = exports.amqp_acknowledgment_node = exports.amqp_publisher_node = exports.amqp_consumer_node = exports.amqp_connection = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var nodeapi_2 = require("@openiap/nodeapi");
@@ -96,7 +96,7 @@ var amqp_connection = /** @class */ (function () {
                         this.client.connect().then(function (user) {
                             var c = client;
                             info("connected to " + _this.host + " as " + user.username);
-                        })["catch"](function (error) {
+                        }).catch(function (error) {
                             console.log(error);
                         });
                         info("connecting to " + this.host);
@@ -191,10 +191,10 @@ var amqp_consumer_node = /** @class */ (function () {
         this.connect();
     };
     amqp_consumer_node.prototype.connect = function () {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var _b, error_1;
+            var _a, error_1;
             var _this = this;
+            var _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -209,14 +209,14 @@ var amqp_consumer_node = /** @class */ (function () {
                         }
                         this.node.status({ fill: "blue", shape: "dot", text: "Connecting..." });
                         info("consumer node in::connect");
-                        _b = this;
-                        return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.RegisterQueue({
+                        _a = this;
+                        return [4 /*yield*/, ((_b = this.client) === null || _b === void 0 ? void 0 : _b.RegisterQueue({
                                 queuename: this.config.queue
                             }, function (msg, payload, user, jwt) {
                                 _this.OnMessage(msg, payload, user, jwt);
                             }))];
                     case 1:
-                        _b.localqueue = _c.sent();
+                        _a.localqueue = _c.sent();
                         if (this.localqueue != null && this.localqueue != "") {
                             info("registed amqp consumer as " + this.localqueue);
                             this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
@@ -238,10 +238,10 @@ var amqp_consumer_node = /** @class */ (function () {
         });
     };
     amqp_consumer_node.prototype.OnMessage = function (msg, payload, user, jwt) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var t, ctx, error_2;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -291,8 +291,8 @@ var amqp_consumer_node = /** @class */ (function () {
         });
     };
     amqp_consumer_node.prototype.onclose = function (removed, done) {
-        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
+            var _a, _b, _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -446,10 +446,10 @@ var amqp_publisher_node = /** @class */ (function () {
         });
     };
     amqp_publisher_node.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("Publisher Node Send", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -569,10 +569,10 @@ var amqp_acknowledgment_node = /** @class */ (function () {
         this.node.on("close", this.onclose);
     }
     amqp_acknowledgment_node.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg, traceId, spanId;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 traceId = logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId;

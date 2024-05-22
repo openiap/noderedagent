@@ -1,5 +1,5 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.nodered_settings = exports.dashboard_settings = void 0;
 var dashboard_settings = /** @class */ (function () {
     function dashboard_settings() {

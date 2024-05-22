@@ -1,6 +1,6 @@
 {
     "name": "@openiap/noderedagent",
-    "version": "1.5.6",
+    "version": "1.5.7",
     "description": "",
     "main": "./src/main.js",
     "types": "./src/main.d.ts",
@@ -29,25 +29,21 @@
     "homepage": "https://github.com/openiap/noderedagent",
     "funding": "https://github.com/sponsors/skadefro",
     "devDependencies": {
-        "nodemon": "^2.0.20",
-        "ts-node": "^10.9.1",
-        "ts-proto": "^1.138.0",
-        "typescript": "^4.9.4"
+        "nodemon": "3.1.0",
+        "typescript": "^5.4.5"
     },
     "dependencies": {
-        "@nodemailer/mailparser2": "^1.0.3",
-        "@openiap/nodeapi": "^0.0.37",
+        "@openiap/nodeapi": "0.0.38",
         "@opentelemetry/exporter-metrics-otlp-grpc": "^0.43.0",
         "@opentelemetry/sdk-node": "^0.43.0",
-        "compression": "^1.7.4",
-        "express": "^4.18.2",
-        "google-auth-library": "^8.7.0",
-        "node-red": "3.1.4",
-        "passport-openidconnect": "^0.1.1",
+        "compression": "1.7.4",
+        "express": "4.19.2",
+        "google-auth-library": "8.7.0",
+        "node-red": "3.1.9",
+        "passport-openidconnect": "0.1.2",
         "pidusage": "^3.0.2",
-        "request": "^2.88.2",
-        "smtp-server": "^3.11.0",
-        "systeminformation": "^5.21.5"
+        "request": "2.88.2",
+        "systeminformation": "5.22.9"
     },
     "openiap": {
         "language": "nodejs",

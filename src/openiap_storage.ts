@@ -692,15 +692,77 @@ export class openiap_storage {
                         newsettings = JSON.parse(newsettings);
 
                         info("parse oldsettings " + new Date().toLocaleTimeString());
-                        let keys = Object.keys(oldsettings.nodes);
-                        for (let i = 0; i < keys.length; i++) {
-                            const key = keys[i];
-                            info("key " + key + " " + new Date().toLocaleTimeString());
-                            if (key != "node-red") {
-                                const val = oldsettings.nodes[key];
-                                try {
+                        let keys
+                        if (oldsettings.nodes != null) {
+                            let keys = Object.keys(oldsettings.nodes);
+                            for (let i = 0; i < keys.length; i++) {
+                                const key = keys[i];
+                                info("key " + key + " " + new Date().toLocaleTimeString());
+                                if (key != "node-red") {
+                                    const val = oldsettings.nodes[key];
+                                    try {
+                                        let version = val.version;
+                                        if (val != null && val.pending_version) {
+                                            version = val.pending_version;
+                                        }
+                                        let oldversion = null;
+                                        if (oldsettings != null && oldsettings.nodes[key] != null) {
+                                            oldversion = oldsettings.nodes[key].version;
+                                            if (oldsettings.nodes[key].pending_version) {
+                                                oldversion = oldsettings.nodes[key].pending_version;
+                                            }
+                                        }
+                                        if (newsettings.nodes[key] == null) {
+                                            info("Remove module " + key + "@" + version);
+                                            this.RED.log.warn("Remove module " + key + "@" + version);
+                                            await this.RED.runtime.nodes.removeModule({ user: "admin", module: key, version: version });
+                                            // HACK
+                                            // exitprocess = true;
+                                        } else if (version != oldversion) {
+                                            info("Install module " + key + "@" + version + " up from " + oldversion);
+                                            this.RED.log.warn("Install module " + key + "@" + version + " up from " + oldversion);
+                                            let result = await this.RED.runtime.nodes.addModule({ user: "admin", module: key, version: version });
+                                            if (result != null && result.pending_version != null && result.pending_version != result.version) {
+                                                info(key + " now has pending_version " + result.pending_version + " request process exit");
+                                                this.RED.log.warn(key + " now has pending_version " + result.pending_version + " request process exit");
+                                                exitprocess = true;
+                                            }
+                                            // HACK
+                                            // exitprocess = true;
+                                        }
+                                    } catch (error) {
+                                        var message = (error.message ? error.message : error);
+                                        err(error);
+                                        if (message == "Uninstall failed") {
+                                            info("Uninstall failed, request process exit");
+                                            this.RED.log.error("Uninstall failed, request process exit");
+                                            exitprocess = true;
+                                        }
+                                        if (message == "Install failed") {
+                                            info("Install failed, request process exit");
+                                            this.RED.log.error("Install failed, request process exit");
+                                            exitprocess = true;
+                                        }
+                                        if (message == "Module already loaded") {
+                                            // info("Install failed, Module already loaded");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        info("parse newsettings " + new Date().toLocaleTimeString());
+                        if (newsettings.nodes != null) {
+                            keys = Object.keys(newsettings.nodes);
+                            for (let i = 0; i < keys.length; i++) {
+                                const key = keys[i];
+                                if (key != "node-red") {
+                                    const val = newsettings.nodes[key];
+                                    if (val == null) {
+                                        info("val == null at " + key + " ???");
+                                        continue;
+                                    }
                                     let version = val.version;
-                                    if (val != null && val.pending_version) {
+                                    if (val.pending_version) {
                                         version = val.pending_version;
                                     }
                                     let oldversion = null;
@@ -710,99 +772,42 @@ export class openiap_storage {
                                             oldversion = oldsettings.nodes[key].pending_version;
                                         }
                                     }
-                                    if (newsettings.nodes[key] == null) {
-                                        info("Remove module " + key + "@" + version);
-                                        this.RED.log.warn("Remove module " + key + "@" + version);
-                                        await this.RED.runtime.nodes.removeModule({ user: "admin", module: key, version: version });
-                                        // HACK
-                                        // exitprocess = true;
-                                    } else if (version != oldversion) {
-                                        info("Install module " + key + "@" + version + " up from " + oldversion);
-                                        this.RED.log.warn("Install module " + key + "@" + version + " up from " + oldversion);
-                                        let result = await this.RED.runtime.nodes.addModule({ user: "admin", module: key, version: version });
-                                        if (result != null && result.pending_version != null && result.pending_version != result.version) {
-                                            info(key + " now has pending_version " + result.pending_version + " request process exit");
-                                            this.RED.log.warn(key + " now has pending_version " + result.pending_version + " request process exit");
+                                    try {
+                                        if (oldsettings.nodes[key] == null) {
+                                            info("Install new module " + key + "@" + version);
+                                            this.RED.log.warn("Install new module " + key + "@" + version);
+                                            let result = await this.RED.runtime.nodes.addModule({ user: "admin", module: key, version: version });
+                                            if (result != null && result.pending_version != null && result.pending_version != result.version) {
+                                                info(key + " now has pending_version " + result.pending_version + " request process exit");
+                                                this.RED.log.warn(key + " now has pending_version " + result.pending_version + " request process exit");
+                                                exitprocess = true;
+                                            }
+                                        } else if (version != oldversion) {
+                                            info("Install module " + key + "@" + version + " up from " + oldversion);
+                                            this.RED.log.warn("Install module " + key + "@" + version + " up from " + oldversion);
+                                            let result = await this.RED.runtime.nodes.addModule({ user: "admin", module: key, version: version });
+                                            if (result != null && result.pending_version != null && result.pending_version != result.version) {
+                                                info(key + " now has pending_version " + result.pending_version + " request process exit");
+                                                this.RED.log.warn(key + " now has pending_version " + result.pending_version + " request process exit");
+                                                exitprocess = true;
+                                            }
+                                        }
+                                    } catch (error) {
+                                        var message = (error.message ? error.message : error);
+                                        err(error);
+                                        if (message == "Uninstall failed") {
+                                            info("Uninstall failed, request process exit");
+                                            this.RED.log.error("Uninstall failed, request process exit");
                                             exitprocess = true;
                                         }
-                                        // HACK
-                                        // exitprocess = true;
-                                    }
-                                } catch (error) {
-                                    var message = (error.message ? error.message : error);
-                                    err(error);
-                                    if (message == "Uninstall failed") {
-                                        info("Uninstall failed, request process exit");
-                                        this.RED.log.error("Uninstall failed, request process exit");
-                                        exitprocess = true;
-                                    }
-                                    if (message == "Install failed") {
-                                        info("Install failed, request process exit");
-                                        this.RED.log.error("Install failed, request process exit");
-                                        exitprocess = true;
-                                    }
-                                    if (message == "Module already loaded") {
-                                        // info("Install failed, Module already loaded");
-                                    }
-                                }
-                            }
-                        }
-                        info("parse newsettings " + new Date().toLocaleTimeString());
-                        keys = Object.keys(newsettings.nodes);
-                        for (let i = 0; i < keys.length; i++) {
-                            const key = keys[i];
-                            if (key != "node-red") {
-                                const val = newsettings.nodes[key];
-                                if (val == null) {
-                                    info("val == null at " + key + " ???");
-                                    continue;
-                                }
-                                let version = val.version;
-                                if (val.pending_version) {
-                                    version = val.pending_version;
-                                }
-                                let oldversion = null;
-                                if (oldsettings != null && oldsettings.nodes[key] != null) {
-                                    oldversion = oldsettings.nodes[key].version;
-                                    if (oldsettings.nodes[key].pending_version) {
-                                        oldversion = oldsettings.nodes[key].pending_version;
-                                    }
-                                }
-                                try {
-                                    if (oldsettings.nodes[key] == null) {
-                                        info("Install new module " + key + "@" + version);
-                                        this.RED.log.warn("Install new module " + key + "@" + version);
-                                        let result = await this.RED.runtime.nodes.addModule({ user: "admin", module: key, version: version });
-                                        if (result != null && result.pending_version != null && result.pending_version != result.version) {
-                                            info(key + " now has pending_version " + result.pending_version + " request process exit");
-                                            this.RED.log.warn(key + " now has pending_version " + result.pending_version + " request process exit");
+                                        if (message == "Install failed") {
+                                            info("Install failed, request process exit");
+                                            this.RED.log.error("Install failed, request process exit");
                                             exitprocess = true;
                                         }
-                                    } else if (version != oldversion) {
-                                        info("Install module " + key + "@" + version + " up from " + oldversion);
-                                        this.RED.log.warn("Install module " + key + "@" + version + " up from " + oldversion);
-                                        let result = await this.RED.runtime.nodes.addModule({ user: "admin", module: key, version: version });
-                                        if (result != null && result.pending_version != null && result.pending_version != result.version) {
-                                            info(key + " now has pending_version " + result.pending_version + " request process exit");
-                                            this.RED.log.warn(key + " now has pending_version " + result.pending_version + " request process exit");
-                                            exitprocess = true;
+                                        if (message == "Module already loaded") {
+                                            // info("Install failed, Module already loaded");
                                         }
-                                    }
-                                } catch (error) {
-                                    var message = (error.message ? error.message : error);
-                                    err(error);
-                                    if (message == "Uninstall failed") {
-                                        info("Uninstall failed, request process exit");
-                                        this.RED.log.error("Uninstall failed, request process exit");
-                                        exitprocess = true;
-                                    }
-                                    if (message == "Install failed") {
-                                        info("Install failed, request process exit");
-                                        this.RED.log.error("Install failed, request process exit");
-                                        exitprocess = true;
-                                    }
-                                    if (message == "Module already loaded") {
-                                        // info("Install failed, Module already loaded");
                                     }
                                 }
                             }
@@ -871,17 +876,19 @@ export class openiap_storage {
         }
         this._settings = settings;
         let exitprocess: boolean = false;
-        let keys = Object.keys(settings.nodes);
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
-            if (key != "node-red") {
-                const val = settings.nodes[key];
-                if (val == null) {
-                    info( "key " + key + " is null ? ");
-                    continue;
-                } else if (val.pending_version) {
-                    info("key " + key + " has a pending_version " + val.pending_version);
-                    exitprocess = true;
+        if(settings.nodes != null) {
+            let keys = Object.keys(settings.nodes);
+            for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                if (key != "node-red") {
+                    const val = settings.nodes[key];
+                    if (val == null) {
+                        info( "key " + key + " is null ? ");
+                        continue;
+                    } else if (val.pending_version) {
+                        info("key " + key + " has a pending_version " + val.pending_version);
+                        exitprocess = true;
+                    }
                 }
             }
         }

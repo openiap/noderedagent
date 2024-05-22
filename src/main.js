@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var openiap_storage_1 = require("./openiap_storage");
 var nodeapi_1 = require("@openiap/nodeapi");
 var nodeapi_2 = require("@openiap/nodeapi");
@@ -59,9 +59,9 @@ catch (error) {
 var RED = nodered;
 var server = null;
 var app = null;
-function get(url, authorization) {
-    if (authorization === void 0) { authorization = null; }
-    return __awaiter(this, void 0, void 0, function () {
+function get(url_1) {
+    return __awaiter(this, arguments, void 0, function (url, authorization) {
+        if (authorization === void 0) { authorization = null; }
         return __generator(this, function (_a) {
             return [2 /*return*/, new Promise(function (resolve, reject) {
                     var provider = http;
@@ -181,7 +181,7 @@ function main() {
                         userinfo_endpoint: process.env.oidc_userinfo_endpoint,
                         issuer: process.env.oidc_issuer,
                         authorization_endpoint: process.env.oidc_authorization_endpoint,
-                        token_endpoint: process.env.oidc_token_endpoint
+                        token_endpoint: process.env.oidc_token_endpoint,
                     };
                     if (!(process.env.oidc_config != null && process.env.oidc_config != "")) return [3 /*break*/, 3];
                     return [4 /*yield*/, get(process.env.oidc_config)];
@@ -209,7 +209,7 @@ function main() {
                         clientSecret: oidc_client_secret,
                         callbackURL: protocol + "://" + domain + '/auth/strategy/callback/',
                         passReqToCallback: true,
-                        scope: "openid profile",
+                        scope: "openid profile", // ['email', 'role', 'groups', 'roles', 'profile', 'openid'],
                         proxy: true,
                         verify: function (req, issuer, profile, audience, refreshToken, accessToken, params, done) {
                             return __awaiter(this, void 0, void 0, function () {

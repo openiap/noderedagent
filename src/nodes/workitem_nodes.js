@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteworkitem = exports.popworkitem = exports.updateworkitem = exports.addworkitems = exports.addworkitem = exports.workitemqueue_config = void 0;
 var nodeapi_1 = require("@openiap/nodeapi");
 var RED = require("node-red");
@@ -88,10 +88,10 @@ var addworkitem = /** @class */ (function () {
         }
     }
     addworkitem.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api add workitem", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -209,10 +209,10 @@ var addworkitems = /** @class */ (function () {
         }
     }
     addworkitems.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api add workitems", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -322,10 +322,10 @@ var updateworkitem = /** @class */ (function () {
         }
     }
     updateworkitem.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api update workitem", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -473,10 +473,10 @@ var popworkitem = /** @class */ (function () {
         }
     }
     popworkitem.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api pop workitem", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
@@ -575,10 +575,10 @@ var deleteworkitem = /** @class */ (function () {
         }
     }
     deleteworkitem.prototype.oninput = function (msg) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var logmsg;
             var _this = this;
+            var _a;
             return __generator(this, function (_b) {
                 logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[msg._msgid];
                 nodeapi_1.apiinstrumentation.With("api delete workitem", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {

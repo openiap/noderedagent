@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.openiap_storage = exports.noderednpmrc = void 0;
 var fs = require("fs");
 var path = require("path");
@@ -431,7 +431,7 @@ var openiap_storage = /** @class */ (function () {
                     "repository": {
                         "type": "git",
                         "url": "git+https://github.com/open-rpa/openflow.git"
-                    }
+                    },
                 };
                 // Let's not !
                 if (!fs.existsSync(packageFile)) {
@@ -742,7 +742,7 @@ var openiap_storage = /** @class */ (function () {
                         item = {
                             name: "credentials for " + this.nodered_id,
                             credentials: credentials, credentialsarray: credentialsarray, _type: "credential", nodered_id: this.nodered_id,
-                            _encrypt: ["credentials", "credentialsarray"]
+                            _encrypt: ["credentials", "credentialsarray"],
                         };
                         if (user != null) {
                             item.deployedby = user.username;
@@ -869,7 +869,7 @@ var openiap_storage = /** @class */ (function () {
     };
     openiap_storage.prototype.onupdate = function (operation, document) {
         return __awaiter(this, void 0, void 0, function () {
-            var update, cred, arr, i, key, value, oldsettings, exitprocess, newsettings, keys, i, key, val, version, oldversion, result, error_5, message, i, key, val, version, oldversion, result, result, error_6, message, error_7, error_8;
+            var update, cred, arr, i, key, value, oldsettings, exitprocess, newsettings, keys, keys_1, i, key, val, version, oldversion, result, error_5, message, i, key, val, version, oldversion, result, result, error_6, message, error_7, error_8;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -941,12 +941,14 @@ var openiap_storage = /** @class */ (function () {
                         newsettings = document.settings;
                         newsettings = JSON.parse(newsettings);
                         info("parse oldsettings " + new Date().toLocaleTimeString());
-                        keys = Object.keys(oldsettings.nodes);
+                        keys = void 0;
+                        if (!(oldsettings.nodes != null)) return [3 /*break*/, 12];
+                        keys_1 = Object.keys(oldsettings.nodes);
                         i = 0;
                         _a.label = 4;
                     case 4:
-                        if (!(i < keys.length)) return [3 /*break*/, 12];
-                        key = keys[i];
+                        if (!(i < keys_1.length)) return [3 /*break*/, 12];
+                        key = keys_1[i];
                         info("key " + key + " " + new Date().toLocaleTimeString());
                         if (!(key != "node-red")) return [3 /*break*/, 11];
                         val = oldsettings.nodes[key];
@@ -1008,6 +1010,7 @@ var openiap_storage = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 12:
                         info("parse newsettings " + new Date().toLocaleTimeString());
+                        if (!(newsettings.nodes != null)) return [3 /*break*/, 21];
                         keys = Object.keys(newsettings.nodes);
                         i = 0;
                         _a.label = 13;
@@ -1144,7 +1147,7 @@ var openiap_storage = /** @class */ (function () {
                         if (!(result.length === 0)) return [3 /*break*/, 3];
                         item_1 = {
                             name: "settings for " + this.nodered_id,
-                            settings: JSON.stringify(settings), _type: "setting", nodered_id: this.nodered_id
+                            settings: JSON.stringify(settings), _type: "setting", nodered_id: this.nodered_id,
                         };
                         if (user != null) {
                             item_1.deployedby = user.username;
@@ -1172,18 +1175,20 @@ var openiap_storage = /** @class */ (function () {
                     case 5:
                         this._settings = settings;
                         exitprocess = false;
-                        keys = Object.keys(settings.nodes);
-                        for (i = 0; i < keys.length; i++) {
-                            key = keys[i];
-                            if (key != "node-red") {
-                                val = settings.nodes[key];
-                                if (val == null) {
-                                    info("key " + key + " is null ? ");
-                                    continue;
-                                }
-                                else if (val.pending_version) {
-                                    info("key " + key + " has a pending_version " + val.pending_version);
-                                    exitprocess = true;
+                        if (settings.nodes != null) {
+                            keys = Object.keys(settings.nodes);
+                            for (i = 0; i < keys.length; i++) {
+                                key = keys[i];
+                                if (key != "node-red") {
+                                    val = settings.nodes[key];
+                                    if (val == null) {
+                                        info("key " + key + " is null ? ");
+                                        continue;
+                                    }
+                                    else if (val.pending_version) {
+                                        info("key " + key + " has a pending_version " + val.pending_version);
+                                        exitprocess = true;
+                                    }
                                 }
                             }
                         }

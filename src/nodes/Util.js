@@ -1,5 +1,5 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.Util = exports.NodeRedUser = void 0;
 var RED = require("node-red");
 var nodeapi_1 = require("@openiap/nodeapi");
