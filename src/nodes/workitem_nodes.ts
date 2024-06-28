@@ -201,7 +201,6 @@ export class addworkitems {
 
 export interface iupdateworkitem {
     name: string;
-    config: any;
     workitem: string;
     error: string;
     state: string;

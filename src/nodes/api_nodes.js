@@ -36,7 +36,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.custom = exports.memorydump = exports.drop_collection = exports.list_collections = exports.api_watch = exports.api_aggregate = exports.upload_file = exports.download_file = exports.revoke_permission = exports.grant_permission = exports.api_updatedocument = exports.get_api_users = exports.get_api_userroles = exports.get_api_roles = exports.api_deletemany = exports.api_delete = exports.api_addorupdate = exports.api_update = exports.api_addmany = exports.api_add = exports.api_get = exports.api_get_jwt = exports.api_credentials = void 0;
+exports.custom = exports.memorydump = exports.drop_collection = exports.list_collections = exports.api_watch = exports.api_aggregate = exports.upload_file = exports.download_file = exports.revoke_permission = exports.grant_permission = exports.api_updatedocument = exports.api_deletemany = exports.api_delete = exports.api_addorupdate = exports.api_update = exports.api_addmany = exports.api_add = exports.api_get = exports.api_get_jwt = exports.api_credentials = void 0;
+exports.get_api_roles = get_api_roles;
+exports.get_api_userroles = get_api_userroles;
+exports.get_api_users = get_api_users;
 var nodeapi_1 = require("@openiap/nodeapi");
 var info = nodeapi_1.config.info, warn = nodeapi_1.config.warn, err = nodeapi_1.config.err;
 var os = require("os");
@@ -1097,7 +1100,6 @@ function get_api_roles(req, res) {
         });
     });
 }
-exports.get_api_roles = get_api_roles;
 function get_api_userroles(req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var query, ors, q, result_1, list, list, exists, result2, error_10;
@@ -1175,7 +1177,6 @@ function get_api_userroles(req, res) {
         });
     });
 }
-exports.get_api_userroles = get_api_userroles;
 function get_api_users(req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var query, ors, result, exists, result2, error_11;
@@ -1227,7 +1228,6 @@ function get_api_users(req, res) {
         });
     });
 }
-exports.get_api_users = get_api_users;
 var api_updatedocument = /** @class */ (function () {
     function api_updatedocument(config) {
         this.config = config;

@@ -47,7 +47,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.get_rpa_workflows = exports.get_rpa_robots = exports.get_rpa_robots_roles = exports.get_rpa_detectors = exports.rpa_killworkflows_node = exports.rpa_workflow_node = exports.rpa_detector_node = void 0;
+exports.rpa_killworkflows_node = exports.rpa_workflow_node = exports.rpa_detector_node = void 0;
+exports.get_rpa_detectors = get_rpa_detectors;
+exports.get_rpa_robots_roles = get_rpa_robots_roles;
+exports.get_rpa_robots = get_rpa_robots;
+exports.get_rpa_workflows = get_rpa_workflows;
 var nodeapi_1 = require("@openiap/nodeapi");
 var nodeapi_2 = require("@openiap/nodeapi");
 var info = nodeapi_2.config.info, warn = nodeapi_2.config.warn, err = nodeapi_2.config.err;
@@ -697,7 +701,6 @@ function get_rpa_detectors(req, res) {
         });
     });
 }
-exports.get_rpa_detectors = get_rpa_detectors;
 function get_rpa_robots_roles(req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var result, error_7;
@@ -723,7 +726,6 @@ function get_rpa_robots_roles(req, res) {
         });
     });
 }
-exports.get_rpa_robots_roles = get_rpa_robots_roles;
 function get_rpa_robots(req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var result, error_8;
@@ -749,7 +751,6 @@ function get_rpa_robots(req, res) {
         });
     });
 }
-exports.get_rpa_robots = get_rpa_robots;
 function get_rpa_workflows(req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var query, result, error_9;
@@ -786,5 +787,4 @@ function get_rpa_workflows(req, res) {
         });
     });
 }
-exports.get_rpa_workflows = get_rpa_workflows;
 //# sourceMappingURL=rpa_nodes.js.map

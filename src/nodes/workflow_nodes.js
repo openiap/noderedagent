@@ -36,7 +36,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assign_workflow_node = exports.get_workflows = exports.get_workflow_forms = exports.workflow_out_node = exports.workflow_in_node = void 0;
+exports.assign_workflow_node = exports.workflow_out_node = exports.workflow_in_node = void 0;
+exports.get_workflow_forms = get_workflow_forms;
+exports.get_workflows = get_workflows;
 var nodeapi_1 = require("@openiap/nodeapi");
 var RED = require("node-red");
 var Util_1 = require("./Util");
@@ -625,7 +627,6 @@ function get_workflow_forms(req, res) {
         });
     });
 }
-exports.get_workflow_forms = get_workflow_forms;
 function get_workflows(req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var query, ors, result, error_9;
@@ -666,7 +667,6 @@ function get_workflows(req, res) {
         });
     });
 }
-exports.get_workflows = get_workflows;
 var assign_workflow_node = /** @class */ (function () {
     function assign_workflow_node(config) {
         this.config = config;
