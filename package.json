@@ -7,7 +7,7 @@
     "scripts": {
         "build": "tsc",
         "watch": "tsc -w",
-        "start_old": "ts-node src/main.ts",
+        "ncu": "npx -y npm-check-updates",
         "updateapilocal": "npm uninstall @openiap/nodeapi && npm i ../nodeapi",
         "updateapidev": "npm uninstall @openiap/nodeapi && npm i openiap/nodeapi",
         "updateapi": "npm uninstall @openiap/nodeapi && npm i @openiap/nodeapi",
