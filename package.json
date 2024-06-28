@@ -1,6 +1,6 @@
 {
     "name": "@openiap/noderedagent",
-    "version": "1.5.7",
+    "version": "1.5.8",
     "description": "",
     "main": "./src/main.js",
     "types": "./src/main.d.ts",
@@ -29,21 +29,20 @@
     "homepage": "https://github.com/openiap/noderedagent",
     "funding": "https://github.com/sponsors/skadefro",
     "devDependencies": {
-        "nodemon": "3.1.0",
-        "typescript": "^5.4.5"
+        "typescript": "5.5.2"
     },
     "dependencies": {
         "@openiap/nodeapi": "0.0.38",
-        "@opentelemetry/exporter-metrics-otlp-grpc": "^0.43.0",
-        "@opentelemetry/sdk-node": "^0.43.0",
+        "@opentelemetry/exporter-metrics-otlp-grpc": "0.43.0",
+        "@opentelemetry/sdk-node": "0.43.0",
         "compression": "1.7.4",
         "express": "4.19.2",
         "google-auth-library": "8.7.0",
-        "node-red": "3.1.9",
+        "node-red": "4.0.1",
         "passport-openidconnect": "0.1.2",
-        "pidusage": "^3.0.2",
+        "pidusage": "3.0.2",
         "request": "2.88.2",
-        "systeminformation": "5.22.9"
+        "systeminformation": "5.22.11"
     },
     "openiap": {
         "language": "nodejs",
