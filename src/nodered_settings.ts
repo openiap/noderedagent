@@ -47,6 +47,9 @@ export class nodered_settings {
             catalogues: ['https://catalogue.nodered.org/catalogue.json']
         },
         tours: false,
+        multiplayer: {
+            enabled: true
+        },
         codeEditor: {
             lib: "monaco",
             options: {
