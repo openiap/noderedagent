@@ -79,11 +79,11 @@ export class api_get_jwt {
                 this.node.status({ fill: "blue", shape: "dot", text: "Requesting token" });
                 let reply = null;
                 if (!Util.IsNullEmpty(username) && !Util.IsNullEmpty(password)) {
-                    reply = await this.client.Signin({ username, password, validateonly: true, longtoken: this.config.longtoken})
+                    reply = await this.client.Signin({ username, password, validateonly: true, longtoken: this.config.longtoken}, span)
                 } else if (this.config.refresh && !Util.IsNullEmpty(msg.jwt)) {
-                    reply = await this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken})
+                    reply = await this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken}, span)
                 } else {
-                    reply = await this.client.Signin({ validateonly: true, longtoken: this.config.longtoken})
+                    reply = await this.client.Signin({ validateonly: true, longtoken: this.config.longtoken}, span)
                 }
                 msg.jwt = reply.jwt;
                 msg.user = reply.user;
@@ -193,7 +193,7 @@ export class api_get {
                     if ((result.length + take) > top) {
                         take = top - result.length;
                     }
-                    subresult = await this.client.Query({ collectionname, query, projection, orderby, top: take, skip, jwt: msg.jwt });
+                    subresult = await this.client.Query({ collectionname, query, projection, orderby, top: take, skip, jwt: msg.jwt }, null, span);
                     skip += take;
                     result = result.concat(subresult);
                     if (result.length > top) {
@@ -294,7 +294,7 @@ export class api_add {
                         if (!Util.IsNullEmpty(entitytype)) {
                             element._type = entitytype;
                         }
-                        Promises.push(this.client.InsertOne({ collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }));
+                        Promises.push(this.client.InsertOne({ collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }, null, span));
                     }
                     this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
                     const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
@@ -414,7 +414,7 @@ export class api_addmany {
                             subitems.push(element);
                         }
                         this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                        results = results.concat(await this.client.InsertMany({ collectionname, items: subitems, w: writeconcern, j: journal, skipresults, jwt: msg.jwt }));
+                        results = results.concat(await this.client.InsertMany({ collectionname, items: subitems, w: writeconcern, j: journal, skipresults, jwt: msg.jwt }, null, span));
                     }
                     data = results;
                 }
@@ -527,7 +527,7 @@ export class api_update {
                         items.push(element);
                     }
                     this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                    var tempresults = await this.client.InsertOrUpdateMany({ collectionname, uniqeness: "_id", items, skipresults: false, j: journal, w: writeconcern, jwt: msg.jwt });
+                    var tempresults = await this.client.InsertOrUpdateMany({ collectionname, uniqeness: "_id", items, skipresults: false, j: journal, w: writeconcern, jwt: msg.jwt }, null, span);
                     results = results.concat(tempresults);
                 }
 
@@ -657,7 +657,7 @@ export class api_addorupdate {
                         items.push(element);
                     }
                     this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                    var tempresults = await this.client.InsertOrUpdateMany({ collectionname, uniqeness, items, skipresults, j: journal, w: writeconcern, jwt: msg.jwt })
+                    var tempresults = await this.client.InsertOrUpdateMany({ collectionname, uniqeness, items, skipresults, j: journal, w: writeconcern, jwt: msg.jwt }, null, span)
                     results = results.concat(tempresults);
                 }
                 if (!skipresults) {
@@ -749,7 +749,7 @@ export class api_delete {
                         const element: any = data[i];
                         let id: string = element;
                         if (Util.isObject(element)) { id = element._id; }
-                        Promises.push(this.client.DeleteOne({ collectionname, id, jwt: msg.jwt }));
+                        Promises.push(this.client.DeleteOne({ collectionname, id, jwt: msg.jwt }, null, span));
                     }
                     this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
                     const tempresults = await Promise.all(Promises.map(p => p.catch(e => e)));
@@ -838,7 +838,7 @@ export class api_deletemany {
                     // throw new Error("ID's no longer supportd, use query!")
                 }
                 this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
-                const affectedrows = await this.client.DeleteMany({ collectionname, query, jwt: msg.jwt });
+                const affectedrows = await this.client.DeleteMany({ collectionname, query, jwt: msg.jwt }, null, span);
                 this.node.send(msg);
                 this.node.status({ fill: "green", shape: "dot", text: "deleted " + affectedrows + " rows" });
             } catch (error) {
@@ -1020,7 +1020,7 @@ export class api_updatedocument {
                 }
 
                 this.node.status({ fill: "blue", shape: "dot", text: "Running Update Document" });
-                const q2 = await this.client.UpdateDocument({collectionname, document: updatedocument,query, w: writeconcern, j: journal, jwt: msg.jwt});
+                const q2 = await this.client.UpdateDocument({collectionname, document: updatedocument,query, w: writeconcern, j: journal, jwt: msg.jwt}, null, span);
                 msg.payload = q2;
                 this.node.send(msg);
                 this.node.status({});
@@ -1097,7 +1097,7 @@ export class grant_permission {
                     this.config.bits[i] = parseInt(this.config.bits[i]);
                 }
 
-                const result: any[] = await this.client.Query({ collectionname: 'users', query: { _id: targetid }, projection: { name: 1 }, orderby: { name: -1 }, top: 1, jwt: msg.jwt })
+                const result: any[] = await this.client.Query({ collectionname: 'users', query: { _id: targetid }, projection: { name: 1 }, orderby: { name: -1 }, top: 1, jwt: msg.jwt }, null, span)
                 if (result.length === 0) { return Util.HandleError(this, "Target " + targetid + " not found ", msg); }
                 const found = result[0];
 
@@ -1411,7 +1411,7 @@ export class api_aggregate {
                 if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
                 this.node.status({ fill: "blue", shape: "dot", text: "Running aggregate" });
-                const result = await this.client.Aggregate({ collectionname, aggregates, jwt: msg.jwt });
+                const result = await this.client.Aggregate({ collectionname, aggregates, jwt: msg.jwt }, null, span);
                 msg.payload = result;
                 this.node.send(msg);
                 this.node.status({});
@@ -1531,7 +1531,7 @@ export class list_collections {
                 let priority: number = 1;
                 if (!Util.IsNullEmpty(msg.priority)) { priority = msg.priority; }
 
-                const collections = await this.client.ListCollections({jwt: msg.jwt});
+                const collections = await this.client.ListCollections({jwt: msg.jwt}, null, span);
                 if (!Util.IsNullEmpty(this.config.results)) {
                     Util.saveToObject(msg, this.config.results, collections);
                 }

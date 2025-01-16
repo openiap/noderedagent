@@ -94,7 +94,7 @@ export class addworkitem {
                         }
                     }
                 }
-                const result = await this.client.PushWorkitem({ payload, files, wiqid, wiq, name: topic, nextrun, priority: wipriority, success_wiq, failed_wiq })
+                const result = await this.client.PushWorkitem({ payload, files, wiqid, wiq, name: topic, nextrun, priority: wipriority, success_wiq, failed_wiq }, null, span)
                 if (!Util.IsNullEmpty(this.config.workitem)) {
                     Util.SetMessageProperty(msg, this.config.workitem, result);
                 }
@@ -179,7 +179,7 @@ export class addworkitems {
                     }
 
                 });
-                var results = await this.client.PushWorkitems({ items, wiqid, wiq, success_wiq, failed_wiq })
+                var results = await this.client.PushWorkitems({ items, wiqid, wiq, success_wiq, failed_wiq }, null, span)
                 Util.SetMessageProperty(msg, "workitems", results);
 
                 this.node.send(msg);
@@ -283,7 +283,7 @@ export class updateworkitem {
                 } catch (error) {
                     delete workitem.nextrun
                 }
-                const result = await this.client.UpdateWorkitem({ workitem, ignoremaxretries })
+                const result = await this.client.UpdateWorkitem({ workitem, ignoremaxretries }, null, span)
                 if (!Util.IsNullEmpty(this.config.workitem)) {
                     Util.SetMessageProperty(msg, this.config.workitem, result);
                 }
@@ -344,7 +344,7 @@ export class popworkitem {
                 let download = this.config.download;
                 if (Util.IsNullEmpty(download)) download = false;
 
-                const result = await this.client.PopWorkitem({ wiqid, wiq, includefiles: download, compressed: false })
+                const result = await this.client.PopWorkitem({ wiqid, wiq, includefiles: download, compressed: false }, null, span)
                 var files: WorkitemFile[] = null;
                 if (result != null) {
                     files = [];
@@ -421,7 +421,7 @@ export class deleteworkitem {
                 this.node.status({ fill: "blue", shape: "dot", text: "Processing" });
                 const workitem = await Util.EvaluateNodeProperty<Workitem>(this, msg, "workitem");
                 if (!Util.IsNullUndefinded(workitem) && !Util.IsNullEmpty(workitem._id)) {
-                    await this.client.DeleteWorkitem({ _id: workitem._id })
+                    await this.client.DeleteWorkitem({ _id: workitem._id }, null, span)
                 } else {
                     throw new Error("workitem missing, or workitem is missing _id");
                 }

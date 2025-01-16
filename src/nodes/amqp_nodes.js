@@ -239,54 +239,61 @@ var amqp_consumer_node = /** @class */ (function () {
     };
     amqp_consumer_node.prototype.OnMessage = function (msg, payload, user, jwt) {
         return __awaiter(this, void 0, void 0, function () {
-            var t, ctx, error_2;
+            var t, ctx, logmsg;
             var _this = this;
             var _a;
             return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        t = api_1.trace.getSpan(api_1.context.active());
-                        if (t != null) {
-                            ctx = t.spanContext();
-                            console.log("OnMessage traceid" + ctx.traceId + " spanid: " + ctx.spanId);
-                        }
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 6, 7, 8]);
-                        if (!this.config.autoack) return [3 /*break*/, 4];
-                        if (!!Util_1.Util.IsNullEmpty(msg.replyto)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: payload, jwt: jwt }, null))];
-                    case 2:
-                        _b.sent();
-                        _b.label = 3;
-                    case 3: return [3 /*break*/, 5];
-                    case 4:
-                        payload.amqpacknowledgment = function (data) { return __awaiter(_this, void 0, void 0, function () {
-                            var _a;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
-                                    case 0: return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: data, jwt: jwt }, null))];
-                                    case 1:
-                                        _b.sent();
-                                        return [2 /*return*/];
-                                }
-                            });
-                        }); };
-                        _b.label = 5;
-                    case 5:
-                        if (!Util_1.Util.IsNullEmpty(jwt))
-                            payload.jwt = jwt;
-                        if (!Util_1.Util.IsNullUndefinded(user))
-                            payload.user = user;
-                        this.node.send(payload);
-                        return [3 /*break*/, 8];
-                    case 6:
-                        error_2 = _b.sent();
-                        Util_1.Util.HandleError(this, error_2, null);
-                        return [3 /*break*/, 8];
-                    case 7: return [7 /*endfinally*/];
-                    case 8: return [2 /*return*/];
+                t = api_1.trace.getSpan(api_1.context.active());
+                if (t != null) {
+                    ctx = t.spanContext();
+                    console.log("OnMessage traceid" + ctx.traceId + " spanid: " + ctx.spanId);
                 }
+                logmsg = (_a = Logger_1.Logger.log_message) === null || _a === void 0 ? void 0 : _a.log_messages[payload._msgid];
+                nodeapi_1.apiinstrumentation.With("Publisher Node Send", logmsg === null || logmsg === void 0 ? void 0 : logmsg.traceId, logmsg === null || logmsg === void 0 ? void 0 : logmsg.spanId, undefined, function (span) { return __awaiter(_this, void 0, void 0, function () {
+                    var error_2;
+                    var _this = this;
+                    var _a;
+                    return __generator(this, function (_b) {
+                        switch (_b.label) {
+                            case 0:
+                                _b.trys.push([0, 5, 6, 7]);
+                                if (!this.config.autoack) return [3 /*break*/, 3];
+                                if (!!Util_1.Util.IsNullEmpty(msg.replyto)) return [3 /*break*/, 2];
+                                return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: payload, jwt: jwt }, null, null, span))];
+                            case 1:
+                                _b.sent();
+                                _b.label = 2;
+                            case 2: return [3 /*break*/, 4];
+                            case 3:
+                                payload.amqpacknowledgment = function (data) { return __awaiter(_this, void 0, void 0, function () {
+                                    var _a;
+                                    return __generator(this, function (_b) {
+                                        switch (_b.label) {
+                                            case 0: return [4 /*yield*/, ((_a = this.client) === null || _a === void 0 ? void 0 : _a.QueueMessage({ queuename: msg.replyto, correlationId: msg.correlationId, data: data, jwt: jwt }, null, null, span))];
+                                            case 1:
+                                                _b.sent();
+                                                return [2 /*return*/];
+                                        }
+                                    });
+                                }); };
+                                _b.label = 4;
+                            case 4:
+                                if (!Util_1.Util.IsNullEmpty(jwt))
+                                    payload.jwt = jwt;
+                                if (!Util_1.Util.IsNullUndefinded(user))
+                                    payload.user = user;
+                                this.node.send(payload);
+                                return [3 /*break*/, 7];
+                            case 5:
+                                error_2 = _b.sent();
+                                Util_1.Util.HandleError(this, error_2, null);
+                                return [3 /*break*/, 7];
+                            case 6: return [7 /*endfinally*/];
+                            case 7: return [2 /*return*/];
+                        }
+                    });
+                }); });
+                return [2 /*return*/];
             });
         });
     };
@@ -502,7 +509,7 @@ var amqp_publisher_node = /** @class */ (function () {
                             case 4:
                                 _a.trys.push([4, 6, , 7]);
                                 // @ts-ignore
-                                return [4 /*yield*/, this.client.QueueMessage({ expiration: expiration, correlationId: msg._msgid, exchangename: exchangename, routingkey: routingkey, queuename: queuename, replyto: this.localqueue, data: data, striptoken: striptoken }, null)];
+                                return [4 /*yield*/, this.client.QueueMessage({ expiration: expiration, correlationId: msg._msgid, exchangename: exchangename, routingkey: routingkey, queuename: queuename, replyto: this.localqueue, data: data, striptoken: striptoken }, null, null, span)];
                             case 5:
                                 // @ts-ignore
                                 _a.sent();

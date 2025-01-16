@@ -503,7 +503,7 @@ var workflow_out_node = /** @class */ (function () {
                                 msgcopy.state = msg.state;
                                 msgcopy.form = msg.form;
                                 this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
-                                return [4 /*yield*/, this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt }, null, span)];
                             case 2:
                                 _a.sent();
                                 return [3 /*break*/, 5];
@@ -513,7 +513,7 @@ var workflow_out_node = /** @class */ (function () {
                                 delete msgcopy.user;
                                 // Logger.instanse.info("Updating workflow instance with id " + msg._id + " (" + msg.name + " with state " + msg.state);
                                 this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
-                                return [4 /*yield*/, this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt }, null, span)];
                             case 4:
                                 _a.sent();
                                 _a.label = 5;
@@ -539,7 +539,7 @@ var workflow_out_node = /** @class */ (function () {
                                 data.jwt = msg.jwt;
                                 expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
                                 this.node.status({ fill: "blue", shape: "dot", text: "QueueMessage.1" });
-                                return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.resultqueue, data: data, correlationId: msg.correlationId, striptoken: false })];
+                                return [4 /*yield*/, this.client.QueueMessage({ queuename: msg.resultqueue, data: data, correlationId: msg.correlationId, striptoken: false }, null, null, span)];
                             case 8:
                                 _a.sent();
                                 if (msg.resultqueue == msg._replyTo)
@@ -571,7 +571,7 @@ var workflow_out_node = /** @class */ (function () {
                                 // ROLLBACK
                                 // Don't wait for ack(), we don't care if the receiver is there, right ?
                                 this.node.status({ fill: "blue", shape: "dot", text: "Queue message for " + msg._replyTo });
-                                return [4 /*yield*/, this.client.QueueMessage({ queuename: msg._replyTo, data: data, correlationId: msg.correlationId, striptoken: false })];
+                                return [4 /*yield*/, this.client.QueueMessage({ queuename: msg._replyTo, data: data, correlationId: msg.correlationId, striptoken: false }, null, null, span)];
                             case 12:
                                 _a.sent();
                                 _a.label = 13;
@@ -900,7 +900,7 @@ var assign_workflow_node = /** @class */ (function () {
                                 if (size > (512 * 1024)) {
                                     throw new Error("msg object is over 512KB in size, please clean up the msg object before using Assign");
                                 }
-                                return [4 /*yield*/, this.client.InsertOne({ collectionname: "workflow_instances", item: runnerinstance, jwt: jwt })];
+                                return [4 /*yield*/, this.client.InsertOne({ collectionname: "workflow_instances", item: runnerinstance, jwt: jwt }, null, span)];
                             case 3:
                                 res3 = _b.sent();
                                 msg._parentid = res3._id;
@@ -911,7 +911,7 @@ var assign_workflow_node = /** @class */ (function () {
                                     msg.payload = { data: msg.payload, _parentid: res3._id };
                                 }
                                 _a = msg;
-                                return [4 /*yield*/, this.client.CreateWorkflowInstance({ targetid: targetid, workflowid: workflowid, name: topic, resultqueue: this.localqueue, data: msg.payload, initialrun: initialrun, jwt: jwt })];
+                                return [4 /*yield*/, this.client.CreateWorkflowInstance({ targetid: targetid, workflowid: workflowid, name: topic, resultqueue: this.localqueue, data: msg.payload, initialrun: initialrun, jwt: jwt }, null, span)];
                             case 4:
                                 _a.newinstanceid = _b.sent();
                                 this.node.send(msg);

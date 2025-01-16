@@ -397,14 +397,14 @@ export class workflow_out_node {
                             msgcopy.state = msg.state;
                             msgcopy.form = msg.form;
                             this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
-                            await this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt });
+                            await this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt }, null, span);
                         } else {
                             let msgcopy = Object.assign({}, msg);
                             delete msgcopy.jwt;
                             delete msgcopy.user;
                             // Logger.instanse.info("Updating workflow instance with id " + msg._id + " (" + msg.name + " with state " + msg.state);
                             this.node.status({ fill: "blue", shape: "dot", text: "Updating workflow instance" });
-                            await this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt });
+                            await this.client.UpdateOne({ collectionname: "workflow_instances", item: msgcopy, jwt: msg.jwt }, null, span);
                         }
                     }
                 } catch (error) {
@@ -426,7 +426,7 @@ export class workflow_out_node {
                         data.jwt = msg.jwt;
                         const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
                         this.node.status({ fill: "blue", shape: "dot", text: "QueueMessage.1" });
-                        await this.client.QueueMessage({ queuename: msg.resultqueue, data, correlationId: msg.correlationId, striptoken: false });
+                        await this.client.QueueMessage({ queuename: msg.resultqueue, data, correlationId: msg.correlationId, striptoken: false }, null, null, span);
 
                         if (msg.resultqueue == msg._replyTo) msg._replyTo = null; // don't double message (??)
 
@@ -453,7 +453,7 @@ export class workflow_out_node {
                         // ROLLBACK
                         // Don't wait for ack(), we don't care if the receiver is there, right ?
                         this.node.status({ fill: "blue", shape: "dot", text: "Queue message for " + msg._replyTo });
-                        await this.client.QueueMessage({ queuename: msg._replyTo, data, correlationId: msg.correlationId, striptoken: false });
+                        await this.client.QueueMessage({ queuename: msg._replyTo, data, correlationId: msg.correlationId, striptoken: false }, null, null, span);
                     }
                 } catch (error) {
                     Util.HandleError(this, error, msg);
@@ -707,14 +707,14 @@ export class assign_workflow_node {
                     throw new Error("msg object is over 512KB in size, please clean up the msg object before using Assign");
                 }
 
-                const res3 = await this.client.InsertOne<Base>({ collectionname: "workflow_instances", item: runnerinstance, jwt });
+                const res3 = await this.client.InsertOne<Base>({ collectionname: "workflow_instances", item: runnerinstance, jwt }, null, span);
                 msg._parentid = res3._id;
                 try {
                     msg.payload._parentid = res3._id;
                 } catch (error) {
                     msg.payload = { data: msg.payload, _parentid: res3._id }
                 }
-                msg.newinstanceid = await this.client.CreateWorkflowInstance({ targetid, workflowid, name: topic, resultqueue: this.localqueue, data: msg.payload, initialrun, jwt });
+                msg.newinstanceid = await this.client.CreateWorkflowInstance({ targetid, workflowid, name: topic, resultqueue: this.localqueue, data: msg.payload, initialrun, jwt }, null, span);
                 this.node.send(msg);
                 this.node.status({ fill: "green", shape: "dot", text: "Connected " + this.localqueue });
             } catch (error) {

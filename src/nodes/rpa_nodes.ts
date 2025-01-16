@@ -278,7 +278,7 @@ export class rpa_workflow_node {
                     data: { payload: msg.payload }
                 }
                 const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-                await this.client.QueueMessage({ expiration, queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: false, jwt: msg.jwt }, null);
+                await this.client.QueueMessage({ expiration, queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: false, jwt: msg.jwt }, null, null, span);
                 this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
             } catch (error) {
                 // Util.HandleError(this, error);
@@ -446,7 +446,7 @@ export class rpa_killworkflows_node {
                     data: {}
                 }
                 const expiration: number = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-                await this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: true, jwt: msg.jwt }, null);
+                await this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId, striptoken: true, jwt: msg.jwt }, null, null, span);
                 this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
             } catch (error) {
                 try {

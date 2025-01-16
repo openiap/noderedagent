@@ -148,7 +148,7 @@ var addworkitem = /** @class */ (function () {
                                         }
                                     }
                                 }
-                                return [4 /*yield*/, this.client.PushWorkitem({ payload: payload, files: files, wiqid: wiqid, wiq: wiq, name: topic, nextrun: nextrun, priority: wipriority, success_wiq: success_wiq, failed_wiq: failed_wiq })];
+                                return [4 /*yield*/, this.client.PushWorkitem({ payload: payload, files: files, wiqid: wiqid, wiq: wiq, name: topic, nextrun: nextrun, priority: wipriority, success_wiq: success_wiq, failed_wiq: failed_wiq }, null, span)];
                             case 8:
                                 result = _b.sent();
                                 if (!Util_1.Util.IsNullEmpty(this.config.workitem)) {
@@ -266,7 +266,7 @@ var addworkitems = /** @class */ (function () {
                                         }
                                     }
                                 });
-                                return [4 /*yield*/, this.client.PushWorkitems({ items: items, wiqid: wiqid, wiq: wiq, success_wiq: success_wiq, failed_wiq: failed_wiq })];
+                                return [4 /*yield*/, this.client.PushWorkitems({ items: items, wiqid: wiqid, wiq: wiq, success_wiq: success_wiq, failed_wiq: failed_wiq }, null, span)];
                             case 6:
                                 results = _b.sent();
                                 Util_1.Util.SetMessageProperty(msg, "workitems", results);
@@ -411,7 +411,7 @@ var updateworkitem = /** @class */ (function () {
                                 catch (error) {
                                     delete workitem_1.nextrun;
                                 }
-                                return [4 /*yield*/, this.client.UpdateWorkitem({ workitem: workitem_1, ignoremaxretries: ignoremaxretries })];
+                                return [4 /*yield*/, this.client.UpdateWorkitem({ workitem: workitem_1, ignoremaxretries: ignoremaxretries }, null, span)];
                             case 10:
                                 result = _a.sent();
                                 if (!Util_1.Util.IsNullEmpty(this.config.workitem)) {
@@ -490,7 +490,7 @@ var popworkitem = /** @class */ (function () {
                                 download = this.config.download;
                                 if (Util_1.Util.IsNullEmpty(download))
                                     download = false;
-                                return [4 /*yield*/, this.client.PopWorkitem({ wiqid: wiqid, wiq: wiq, includefiles: download, compressed: false })];
+                                return [4 /*yield*/, this.client.PopWorkitem({ wiqid: wiqid, wiq: wiq, includefiles: download, compressed: false }, null, span)];
                             case 1:
                                 result = _b.sent();
                                 files = null;
@@ -592,7 +592,7 @@ var deleteworkitem = /** @class */ (function () {
                             case 1:
                                 workitem = _a.sent();
                                 if (!(!Util_1.Util.IsNullUndefinded(workitem) && !Util_1.Util.IsNullEmpty(workitem._id))) return [3 /*break*/, 3];
-                                return [4 /*yield*/, this.client.DeleteWorkitem({ _id: workitem._id })];
+                                return [4 /*yield*/, this.client.DeleteWorkitem({ _id: workitem._id }, null, span)];
                             case 2:
                                 _a.sent();
                                 return [3 /*break*/, 4];

@@ -1,6 +1,6 @@
 {
     "name": "@openiap/noderedagent",
-    "version": "1.5.10",
+    "version": "1.5.11",
     "description": "",
     "main": "./src/main.js",
     "types": "./src/main.d.ts",
@@ -32,7 +32,7 @@
         "typescript": "5.5.2"
     },
     "dependencies": {
-        "@openiap/nodeapi": "0.0.38",
+        "@openiap/nodeapi": "^0.0.39",
         "@opentelemetry/exporter-metrics-otlp-grpc": "0.43.0",
         "@opentelemetry/sdk-node": "0.43.0",
         "compression": "1.7.4",

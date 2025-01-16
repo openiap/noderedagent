@@ -187,23 +187,26 @@ export class amqp_consumer_node {
         }
         // var log_messages = log_message.log_messages;
         // let logmsg = log_messages[payload._msgid];
-        try {
-            if (this.config.autoack) {
-                if(!Util.IsNullEmpty(msg.replyto)) {
-                    await this.client?.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data: payload, jwt: jwt}, null)
+        let logmsg = Logger.log_message?.log_messages[payload._msgid];
+        apiinstrumentation.With("Publisher Node Send", logmsg?.traceId, logmsg?.spanId, undefined, async (span)=> {
+            try {
+                if (this.config.autoack) {
+                    if(!Util.IsNullEmpty(msg.replyto)) {
+                        await this.client?.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data: payload, jwt: jwt}, null, null, span)
+                    }
+                } else {
+                    payload.amqpacknowledgment = async (data)=> {
+                        await this.client?.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data, jwt: jwt}, null, null, span)
+                    }
                 }
-            } else {
-                payload.amqpacknowledgment = async (data)=> {
-                    await this.client?.QueueMessage({ queuename: msg.replyto,  correlationId: msg.correlationId, data, jwt: jwt}, null)
-                }
+                if(!Util.IsNullEmpty(jwt)) payload.jwt = jwt;
+                if(!Util.IsNullUndefinded(user)) payload.user = user;
+                this.node.send(payload);
+            } catch (error) {
+                Util.HandleError(this, error, null);
+            } finally {
             }
-            if(!Util.IsNullEmpty(jwt)) payload.jwt = jwt;
-            if(!Util.IsNullUndefinded(user)) payload.user = user;
-            this.node.send(payload);
-        } catch (error) {
-            Util.HandleError(this, error, null);
-        } finally {
-        }
+        });
     }
     async onclose(removed: boolean, done: any) {
         // if (this.localqueue != null && this.localqueue != "" && removed) {
@@ -372,7 +375,7 @@ export class amqp_publisher_node {
                 this.node.status({ fill: "blue", shape: "dot", text: "Sending message ..." });
                 try {
                     // @ts-ignore
-                    await this.client.QueueMessage({ expiration, correlationId: msg._msgid, exchangename, routingkey, queuename, replyto: this.localqueue, data, striptoken }, null);
+                    await this.client.QueueMessage({ expiration, correlationId: msg._msgid, exchangename, routingkey, queuename, replyto: this.localqueue, data, striptoken }, null, null, span);
                     amqp_publisher_node.payloads[msg._msgid] = msg;
                 } catch (error) {
                     data.error = error;

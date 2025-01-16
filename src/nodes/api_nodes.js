@@ -125,17 +125,17 @@ var api_get_jwt = /** @class */ (function () {
                                 this.node.status({ fill: "blue", shape: "dot", text: "Requesting token" });
                                 reply = null;
                                 if (!(!Util_1.Util.IsNullEmpty(username) && !Util_1.Util.IsNullEmpty(password))) return [3 /*break*/, 2];
-                                return [4 /*yield*/, this.client.Signin({ username: username, password: password, validateonly: true, longtoken: this.config.longtoken })];
+                                return [4 /*yield*/, this.client.Signin({ username: username, password: password, validateonly: true, longtoken: this.config.longtoken }, span)];
                             case 1:
                                 reply = _a.sent();
                                 return [3 /*break*/, 6];
                             case 2:
                                 if (!(this.config.refresh && !Util_1.Util.IsNullEmpty(msg.jwt))) return [3 /*break*/, 4];
-                                return [4 /*yield*/, this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken })];
+                                return [4 /*yield*/, this.client.Signin({ jwt: msg.jwt, validateonly: true, longtoken: this.config.longtoken }, span)];
                             case 3:
                                 reply = _a.sent();
                                 return [3 /*break*/, 6];
-                            case 4: return [4 /*yield*/, this.client.Signin({ validateonly: true, longtoken: this.config.longtoken })];
+                            case 4: return [4 /*yield*/, this.client.Signin({ validateonly: true, longtoken: this.config.longtoken }, span)];
                             case 5:
                                 reply = _a.sent();
                                 _a.label = 6;
@@ -279,7 +279,7 @@ var api_get = /** @class */ (function () {
                                 if ((result.length + take) > top_1) {
                                     take = top_1 - result.length;
                                 }
-                                return [4 /*yield*/, this.client.Query({ collectionname: collectionname, query: query, projection: projection, orderby: orderby, top: take, skip: skip, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.Query({ collectionname: collectionname, query: query, projection: projection, orderby: orderby, top: take, skip: skip, jwt: msg.jwt }, null, span)];
                             case 12:
                                 subresult = _a.sent();
                                 skip += take;
@@ -407,7 +407,7 @@ var api_add = /** @class */ (function () {
                                     if (!Util_1.Util.IsNullEmpty(entitytype)) {
                                         element._type = entitytype;
                                     }
-                                    Promises.push(this.client.InsertOne({ collectionname: collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }));
+                                    Promises.push(this.client.InsertOne({ collectionname: collectionname, item: element, w: writeconcern, j: journal, jwt: msg.jwt }, null, span));
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
                                 return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p.catch(function (e) { return e; }); }))];
@@ -552,7 +552,7 @@ var api_addmany = /** @class */ (function () {
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
                                 _b = (_a = results).concat;
-                                return [4 /*yield*/, this.client.InsertMany({ collectionname: collectionname, items: subitems, w: writeconcern, j: journal, skipresults: skipresults, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.InsertMany({ collectionname: collectionname, items: subitems, w: writeconcern, j: journal, skipresults: skipresults, jwt: msg.jwt }, null, span)];
                             case 7:
                                 results = _b.apply(_a, [_c.sent()]);
                                 _c.label = 8;
@@ -682,7 +682,7 @@ var api_update = /** @class */ (function () {
                                     items.push(element);
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                                return [4 /*yield*/, this.client.InsertOrUpdateMany({ collectionname: collectionname, uniqeness: "_id", items: items, skipresults: false, j: journal, w: writeconcern, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.InsertOrUpdateMany({ collectionname: collectionname, uniqeness: "_id", items: items, skipresults: false, j: journal, w: writeconcern, jwt: msg.jwt }, null, span)];
                             case 7:
                                 tempresults = _a.sent();
                                 results = results.concat(tempresults);
@@ -826,7 +826,7 @@ var api_addorupdate = /** @class */ (function () {
                                     items.push(element);
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
-                                return [4 /*yield*/, this.client.InsertOrUpdateMany({ collectionname: collectionname, uniqeness: uniqeness, items: items, skipresults: skipresults, j: journal, w: writeconcern, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.InsertOrUpdateMany({ collectionname: collectionname, uniqeness: uniqeness, items: items, skipresults: skipresults, j: journal, w: writeconcern, jwt: msg.jwt }, null, span)];
                             case 8:
                                 tempresults = _a.sent();
                                 results = results.concat(tempresults);
@@ -945,7 +945,7 @@ var api_delete = /** @class */ (function () {
                                     if (Util_1.Util.isObject(element)) {
                                         id = element._id;
                                     }
-                                    Promises.push(this.client.DeleteOne({ collectionname: collectionname, id: id, jwt: msg.jwt }));
+                                    Promises.push(this.client.DeleteOne({ collectionname: collectionname, id: id, jwt: msg.jwt }, null, span));
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: (y + 1) + " to " + (y + 50) + " of " + data.length });
                                 return [4 /*yield*/, Promise.all(Promises.map(function (p) { return p.catch(function (e) { return e; }); }))];
@@ -1049,7 +1049,7 @@ var api_deletemany = /** @class */ (function () {
                                     // throw new Error("ID's no longer supportd, use query!")
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: "processing ..." });
-                                return [4 /*yield*/, this.client.DeleteMany({ collectionname: collectionname, query: query, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.DeleteMany({ collectionname: collectionname, query: query, jwt: msg.jwt }, null, span)];
                             case 3:
                                 affectedrows = _a.sent();
                                 this.node.send(msg);
@@ -1293,7 +1293,7 @@ var api_updatedocument = /** @class */ (function () {
                                     updatedocument = JSON.parse(updatedocument);
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: "Running Update Document" });
-                                return [4 /*yield*/, this.client.UpdateDocument({ collectionname: collectionname, document: updatedocument, query: query, w: writeconcern, j: journal, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.UpdateDocument({ collectionname: collectionname, document: updatedocument, query: query, w: writeconcern, j: journal, jwt: msg.jwt }, null, span)];
                             case 4:
                                 q2 = _a.sent();
                                 msg.payload = q2;
@@ -1374,7 +1374,7 @@ var grant_permission = /** @class */ (function () {
                                 for (i = 0; i < this.config.bits.length; i++) {
                                     this.config.bits[i] = parseInt(this.config.bits[i]);
                                 }
-                                return [4 /*yield*/, this.client.Query({ collectionname: 'users', query: { _id: targetid }, projection: { name: 1 }, orderby: { name: -1 }, top: 1, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.Query({ collectionname: 'users', query: { _id: targetid }, projection: { name: 1 }, orderby: { name: -1 }, top: 1, jwt: msg.jwt }, null, span)];
                             case 1:
                                 result = _a.sent();
                                 if (result.length === 0) {
@@ -1756,7 +1756,7 @@ var api_aggregate = /** @class */ (function () {
                                     priority = msg.priority;
                                 }
                                 this.node.status({ fill: "blue", shape: "dot", text: "Running aggregate" });
-                                return [4 /*yield*/, this.client.Aggregate({ collectionname: collectionname, aggregates: aggregates, jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.Aggregate({ collectionname: collectionname, aggregates: aggregates, jwt: msg.jwt }, null, span)];
                             case 3:
                                 result = _a.sent();
                                 msg.payload = result;
@@ -1909,7 +1909,7 @@ var list_collections = /** @class */ (function () {
                                 if (!Util_1.Util.IsNullEmpty(msg.priority)) {
                                     priority = msg.priority;
                                 }
-                                return [4 /*yield*/, this.client.ListCollections({ jwt: msg.jwt })];
+                                return [4 /*yield*/, this.client.ListCollections({ jwt: msg.jwt }, null, span)];
                             case 1:
                                 collections = _a.sent();
                                 if (!Util_1.Util.IsNullEmpty(this.config.results)) {

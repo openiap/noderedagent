@@ -405,7 +405,7 @@ var rpa_workflow_node = /** @class */ (function () {
                                     data: { payload: msg.payload }
                                 };
                                 expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-                                return [4 /*yield*/, this.client.QueueMessage({ expiration: expiration, queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId: correlationId, striptoken: false, jwt: msg.jwt }, null)];
+                                return [4 /*yield*/, this.client.QueueMessage({ expiration: expiration, queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId: correlationId, striptoken: false, jwt: msg.jwt }, null, null, span)];
                             case 1:
                                 _a.sent();
                                 this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
@@ -628,7 +628,7 @@ var rpa_killworkflows_node = /** @class */ (function () {
                                     data: {}
                                 };
                                 expiration = (typeof msg.expiration == 'number' ? msg.expiration : 500);
-                                return [4 /*yield*/, this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId: correlationId, striptoken: true, jwt: msg.jwt }, null)];
+                                return [4 /*yield*/, this.client.QueueMessage({ queuename: queue, replyto: this.localqueue, data: rpacommand, correlationId: correlationId, striptoken: true, jwt: msg.jwt }, null, null, span)];
                             case 1:
                                 _a.sent();
                                 this.node.status({ fill: "yellow", shape: "dot", text: "Pending " + this.localqueue });
