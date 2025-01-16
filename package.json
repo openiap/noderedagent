@@ -1,6 +1,6 @@
 {
     "name": "@openiap/noderedagent",
-    "version": "1.5.9",
+    "version": "1.5.10",
     "description": "",
     "main": "./src/main.js",
     "types": "./src/main.d.ts",
